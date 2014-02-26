@@ -70,9 +70,13 @@ DESCRIPTION
 
 KEYWORDS
    namespace
+    Adds a route to application.
+
         namespace user => sub { ... };
 
    route_param
+    Define a route parameter as a namespace "route_param".
+
         route_param id => $Raisin::Types::Integer, sub { ... };
 
    delete, get, post, put
@@ -282,8 +286,7 @@ HEADERS
         req->header('X-Application');
         req->headers;
 
-AUTHENTICATION
-    TODO Built-in plugin Raisin::Plugin::Authentication
+    TODO Built-in plugins Raisin::Plugin::Authentication
     Raisin::Plugin::Authentication::Basic
     Raisin::Plugin::Authentication::Digest
 
@@ -306,7 +309,7 @@ API DOCUMENTATION
 
         plugin 'APIDocs';
 
-    Documentation available on "http://<url>/api-docs" url.
+    Documentation available on "http://<url>/api-docs" URL.
 
     For more see Raisin::Plugin::APIDocs.
 
@@ -387,8 +390,11 @@ DEPLOYING
             mount '/api/rest' => RaisinApp->new;
         };
 
-GitHub
-    https://github.com/khrt/Raisin
+EXAMPLES
+    See examples.
+
+GITHUB
+    <https://github.com/khrt/Raisin>
 
 AUTHOR
     Artur Khabibullin - khrt <at> ya.ru
