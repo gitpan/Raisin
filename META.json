@@ -39,6 +39,7 @@
          "requires" : {
             "Carp" : "0",
             "JSON" : "0",
+            "Log::Dispatch" : "2.39",
             "Plack" : "1.0030",
             "Plack::Middleware::CrossOrigin" : "0.009",
             "YAML" : "0",
@@ -63,6 +64,6 @@
          "web" : "https://github.com/khrt/Raisin"
       }
    },
-   "version" : "0.11"
+   "version" : "0.12"
 }
 
