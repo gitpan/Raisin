@@ -1,3 +1,7 @@
+0.2 Fixes & Improvments
+    - Accept both keywords `required` and `requires` in Param.pm;
+    - `populate_params` now populates all declared params;
+
 0.13 Fixes
     - More functional `raisin` script;
     - Update dependencies;

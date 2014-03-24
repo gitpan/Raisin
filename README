@@ -184,7 +184,7 @@ KEYWORDS
     Creates and returns a PSGI ready subroutine, and makes the app ready for
     "Plack".
 
-Parameters
+PARAMETERS
     Request parameters are available through the params hash object. This
     includes GET, POST and PUT parameters, along with any named parameters
     you specify in your route strings.
@@ -245,7 +245,7 @@ Parameters
     You can create your own types as well. See examples in Raisin::Types.
     Also see Raisin::Types::Base.
 
-Hooks
+HOOKS
     This blocks can be executed before or after every API call, using
     "before", "after", "before_validation" and "after_validation".
 
