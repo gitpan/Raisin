@@ -6,6 +6,7 @@ MANIFEST
 META.json
 META.yml
 README
+TODO.md
 cpanfile
 dist.ini
 eg/plural/lib/Rapp.pm
