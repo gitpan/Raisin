@@ -17,6 +17,7 @@ eg/singular/dump.pl
 eg/singular/routes.pl
 lib/Raisin.pm
 lib/Raisin/API.pm
+lib/Raisin/Attributes.pm
 lib/Raisin/Param.pm
 lib/Raisin/Plugin.pm
 lib/Raisin/Plugin/APIDocs.pm
@@ -32,7 +33,7 @@ lib/Raisin/Types/Base.pm
 script/raisin
 t/80-apidocs.t
 t/80-routes.t
-t/80-types.t
+t/80-types-and-params.t
 t/99-body-params.t
 t/99-routes.t
 t/release-pod-syntax.t

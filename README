@@ -20,8 +20,8 @@ SYNOPSIS
         namespace '/user' => sub {
             get params => [
                 #required/optional => [name, type, default, regex]
-                optional => ['start', $Raisin::Types::Integer, 0],
-                optional => ['count', $Raisin::Types::Integer, 10],
+                optional => ['start', 'Raisin::Types::Integer', 0],
+                optional => ['count', 'Raisin::Types::Integer', 10],
             ],
             sub {
                 my $params = shift;
@@ -39,9 +39,9 @@ SYNOPSIS
             };
 
             post params => [
-                required => ['name', $Raisin::Types::String],
-                required => ['password', $Raisin::Types::String],
-                optional => ['email', $Raisin::Types::String, undef, qr/.+\@.+/],
+                required => ['name', 'Raisin::Types::String'],
+                required => ['password', 'Raisin::Types::String'],
+                optional => ['email', 'Raisin::Types::String', undef, qr/.+\@.+/],
             ],
             sub {
                 my $params = shift;
@@ -52,7 +52,7 @@ SYNOPSIS
                 { success => 1 }
             };
 
-            route_param 'id' => $Raisin::Types::Integer,
+            route_param 'id' => 'Raisin::Types::Integer',
             sub {
                 get sub {
                     my $params = shift;
@@ -77,7 +77,7 @@ KEYWORDS
   route_param
     Define a route parameter as a namespace "route_param".
 
-        route_param id => $Raisin::Types::Integer, sub { ... };
+        route_param id => 'Raisin::Types::Integer', sub { ... };
 
   delete, get, post, put
     These are shortcuts to "route" restricted to the corresponding HTTP
@@ -86,8 +86,8 @@ KEYWORDS
         get sub { 'GET' };
 
         get params => [
-            required => ['id', $Raisin::Types::Integer],
-            optional => ['key', $Raisin::Types::String],
+            required => ['id', 'Raisin::Types::Integer'],
+            optional => ['key', 'Raisin::Types::String'],
         ],
         sub { 'GET' };
 
@@ -213,8 +213,8 @@ PARAMETERS
     have a default value.
 
         get params => [
-            required => ['name', $Raisin::Types::String],
-            optional => ['number', $Raisin::Types::Integer, 10],
+            required => ['name', 'Raisin::Types::String'],
+            optional => ['number', 'Raisin::Types::Integer', 10],
         ],
         sub {
             my $params = shift;
@@ -235,6 +235,8 @@ PARAMETERS
 
   Types
     Here is built-in types
+
+    *   Raisin::Types::Float
 
     *   Raisin::Types::Integer
 
