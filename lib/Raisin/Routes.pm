@@ -96,8 +96,8 @@ sub find {
     my @found
     #   = sort { $b->bridge <=> $a->bridge || $a->pattern cmp $b->pattern }
         = grep { $_->match($method, $path) } @$routes;
-use DDP;
-p @found;
+#use DDP;
+#p @found;
 
     $self->cache->{$cache_key} = \@found;
     \@found;

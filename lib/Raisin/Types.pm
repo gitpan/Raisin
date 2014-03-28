@@ -22,14 +22,12 @@ sub in {
 # ->
 
 package Raisin::Types::String;
-
 use base 'Raisin::Types::Base';
 sub regex { qr/^[\t\r\n\p{IsPrint}]{0,32766}/ }
 
 # ->
 
 package Raisin::Types::Scalar;
-
 use base 'Raisin::Types::Base';
 sub check {
     my ($self, $v) = @_;

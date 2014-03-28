@@ -23,8 +23,7 @@ sub _attr {
         $attr = sub {
             my ($self, $value) = @_;
             $self->{"_$name"} = $value if defined $value;
-            $self->{"_$name"} = $default if $default;
-            $self->{"_$name"};
+            $self->{"_$name"} // $default;
         };
     }
 
