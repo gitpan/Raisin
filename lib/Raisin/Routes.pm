@@ -37,20 +37,18 @@ sub add {
         return;
     }
 
-    # TODO: path params
-    # NOTE: IN PROGRESS
+    # Named route params
     if (scalar @args == 1 || scalar @args == 3) {
         $path = $path . '/' . shift(@args);
-        warn $path;
     }
 
     my @params;
     if (@args && (my %args = @args)) {
         foreach my $key (qw(params named)) {
-            while (my @param = splice @{ $args{$key} }, 0, 2) {
+            for (my $i = 0; $i < scalar @{ $args{$key} || [] }; $i += 2) {
                 push @params, Raisin::Param->new(
                     named => $key eq 'named' ? 1 : 0,
-                    param => \@param
+                    param => [$args{$key}[$i], $args{$key}[$i + 1]]
                 );
             }
         }

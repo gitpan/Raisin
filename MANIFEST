@@ -31,9 +31,9 @@ lib/Raisin/Routes/Endpoint.pm
 lib/Raisin/Types.pm
 lib/Raisin/Types/Base.pm
 script/raisin
-t/80-apidocs.t
+t/10-app-params.t
+t/10-app-routes.t
+t/20-plugin-apidocs.t
 t/80-routes.t
 t/80-types-and-params.t
-t/99-body-params.t
-t/99-routes.t
 t/release-pod-syntax.t
