@@ -40,12 +40,12 @@ api_format 'YAML';
 # /user
 namespace user => sub {
     # list all users
-    get params => [
+    params [
         #required/optional => [name, type, default, regex]
         optional => ['start', 'Raisin::Types::Integer', 0],
         optional => ['count', 'Raisin::Types::Integer', 10],
     ],
-    sub {
+    get => sub {
         my $params = shift;
         my ($start, $count) = ($params->{start}, $params->{count});
 
@@ -67,14 +67,13 @@ namespace user => sub {
         { data => \@users }
     };
 
-
     # create new user
-    post params => [
+    params [
         required => ['name', 'Raisin::Types::String'],
         required => ['password', 'Raisin::Types::String'],
         optional => ['email', 'Raisin::Types::String', undef, qr/[^@]@[^.].\w+/],
     ],
-    sub {
+    post => sub {
         my $params = shift;
 
         my $id = max(keys %USERS) + 1;
@@ -93,11 +92,11 @@ namespace user => sub {
         };
 
         # edit user
-        put params => [
+        params [
             optional => ['password', 'Raisin::Types::String'],
             optional => ['email', 'Raisin::Types::String', undef, qr/[^@]@[^.].\w+/],
         ],
-        sub {
+        put => sub {
             my $params = shift;
 
             my $updated = 0;
@@ -129,7 +128,7 @@ namespace user => sub {
 namespace failed => sub {
     get sub {
         res->status(409);
-        { data => 'BROKEN!' }
+        { data => param('failed') || 'BROKEN!' }
     };
 };
 
