@@ -30,7 +30,9 @@ lib/Raisin/Routes.pm
 lib/Raisin/Routes/Endpoint.pm
 lib/Raisin/Types.pm
 lib/Raisin/Types/Base.pm
+lib/Raisin/Util.pm
 script/raisin
+t/10-app-netsted_route_params.t
 t/10-app-params.t
 t/10-app-routes.t
 t/20-plugin-apidocs.t

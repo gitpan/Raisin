@@ -4,16 +4,16 @@ TO DO OR NOT TO DO
 
 Token auth
 ==========
-    * Plack middleware;
-    * Raisin plugin;
+  * Plack middleware;
+  * Raisin plugin;
 
 See Plack::Middleware::Auth::AccessToken.
 
 
 Output format
 =============
-    * based on accept content type header;
-    * based on path extension;
+  * based on accept content type header;
+  * based on path extension;
 Path extension should have more priority rather accept header.
 
 
@@ -24,11 +24,26 @@ Customizible errors pages with default tempaltes
 * any???
 
 
-DONE
-====
+DONE: Raisin script
+-------------------
+  * version
+  * list routes [simple]
 
-FIX params keyword
-------------------
+    GET  /users
+    GET  /users/all
+    POST /users
+
+  * list routes [detailed]
+
+    GET /users
+      optional: id, Type::Integer
+      optional: start, Type::Integer, default: 0
+      optional: count, Type::Integer, default: 10
+
+
+
+DONE: FIX params keyword
+------------------------
 1) rename to param (singular);
 2) w/o argument return hash ref of all values;
 3) w/ argrument return param by argument name or undef if not exists;
@@ -38,8 +53,8 @@ FIX params keyword
 
 
 
-Refactor Types
---------------
+DONE: Refactor Types
+--------------------
 Types should be a class with a `Raisin::Types::Base` parent.
 Example of an Integer type:
 
@@ -94,8 +109,8 @@ Base class `Raisin::Types::Base` should be something like this:
 Do not forget to update DOCS!!!
 
 
-Path params
------------
+DONE: Path params
+-----------------
 _get/post/put/delete/..._ etc. should take path params;
 Don't forget to update DOCS!!!
 
@@ -104,8 +119,8 @@ Don't forget to update DOCS!!!
     };
 
 
-Params as a main word
---------------------
+DONE: Params as a main word
+---------------------------
 Start route definition with the `params` keyword like in Grape:
 
     params [

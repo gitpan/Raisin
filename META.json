@@ -63,6 +63,9 @@
          "web" : "https://github.com/khrt/Raisin"
       }
    },
-   "version" : "0.25"
+   "version" : "0.26",
+   "x_contributors" : [
+      "Artur Kh <khrt@ya.ru>"
+   ]
 }
 

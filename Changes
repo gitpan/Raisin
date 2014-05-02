@@ -1,3 +1,8 @@
+0.26 raisin script
+    - Raisin script: show application API;
+    - Detect format by `Accept' header;
+    - Fix path crop regex;
+
 0.25 Fixes
     - Fix named route params;
     - New keyword params (similar to Grape);
