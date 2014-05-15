@@ -12,7 +12,7 @@ use Raisin::Routes;
 
 use Raisin::Util;
 
-our $VERSION = '0.26';
+our $VERSION = '0.27';
 
 sub new {
     my ($class, %args) = @_;
@@ -143,12 +143,18 @@ sub psgi {
 
             # Format plugins
             if (ref $data && $self->can('serialize')) {
-                my $accept = $req->header('Accept');
+                my $format = $route->format || $req->header('Accept');
 
-                if (my $serializer = Raisin::Util::detect_serializer($accept)) {
-                    Plack::Util::load_class($serializer);
-                    no strict 'refs';
-                    $data = "${serializer}::serialize"->($data);
+                if (my $serializer = Raisin::Util::detect_serializer($format)) {
+                    my $class = 'Raisin::Plugin::Format::' . uc($serializer);
+                    Plack::Util::load_class($class);
+
+                    {
+                        no strict 'refs';
+                        $data = "${class}::serialize"->($data);
+                    }
+
+                    $res->$serializer;
                 }
                 else {
                     $data = $self->serialize($data);
@@ -680,11 +686,60 @@ See L<Raisin::Plugin::Logger>.
 
 =head1 API DOCUMENTATION
 
+=head2 Raisin script
+
+You can see application routes with the following command:
+
+    $ raisin --routes examples/singular/routes.pl
+      GET     /user
+      GET     /user/all
+      POST    /user
+      GET     /user/{id}
+      PUT     /user/{id}
+      GET     /user/{id}/bump
+      PUT     /user/{id}/bump
+      GET     /failed
+
+Verbose output with route parameters:
+
+    $ raisin --routes --params examples/singular/routes.pl
+      GET     /user
+        optional: `start', type: Integer, default: 0
+        optional: `count', type: Integer, default: 10
+
+      GET     /user/all
+
+      POST    /user
+        required: `name', type: String
+        required: `password', type: String
+        optional: `email', type: String
+
+      GET     /user/{id}
+        required: `id', type: Integer
+
+      PUT     /user/{id}
+        optional: `password', type: String
+        optional: `email', type: String
+        required: `id', type: Integer
+
+      GET     /user/{id}/bump
+        required: `id', type: Integer
+
+      PUT     /user/{id}/bump
+        required: `id', type: Integer
+
+      GET     /failed
+
+      GET     /params
+
+=head2 Swagger
+
 L<Swagger|https://github.com/wordnik/swagger-core> compatible API documentations.
 
     plugin 'APIDocs';
 
-Documentation available on C<http://E<lt>urlE<gt>/api-docs> URL.
+Documentation will be available on C<http://E<lt>urlE<gt>/api-docs> URL.
+So you can use this URL in Swagger UI.
 
 For more see L<Raisin::Plugin::APIDocs>.
 
