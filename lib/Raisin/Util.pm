@@ -3,11 +3,15 @@ package Raisin::Util;
 use strict;
 use warnings;
 
+use Plack::Util;
+
 my %SERIALIZERS = (
     json     => 'json',
     json_rpc => 'json',
     yaml     => 'yaml',
     yml      => 'yaml',
+    text     => 'text',
+    txt      => 'text',
 );
 
 sub detect_serializer {

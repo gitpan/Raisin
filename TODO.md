@@ -5,6 +5,12 @@
   * Raisin plugin;
   See Plack::Middleware::Auth::AccessToken.
 
+Make tests for all output/input formats
+=======================================
+Test: YAML, JSON, TEXT in/out params.
+
+
+
 Customizible errors pages with default tempaltes
 ================================================
   * 404
@@ -15,13 +21,13 @@ Input format
 ============
   * accept params in JSON or YAML accoring to format;
 
-Output format
+---
+
+DONE: Output format
 =============
 Path extension should have more priority rather accept header.
   * based on accept content type header;
   * based on path extension;
-
----
 
 DONE: Raisin script
 -------------------

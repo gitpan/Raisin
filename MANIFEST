@@ -22,6 +22,7 @@ lib/Raisin/Param.pm
 lib/Raisin/Plugin.pm
 lib/Raisin/Plugin/APIDocs.pm
 lib/Raisin/Plugin/Format/JSON.pm
+lib/Raisin/Plugin/Format/TEXT.pm
 lib/Raisin/Plugin/Format/YAML.pm
 lib/Raisin/Plugin/Logger.pm
 lib/Raisin/Request.pm
@@ -32,10 +33,11 @@ lib/Raisin/Types.pm
 lib/Raisin/Types/Base.pm
 lib/Raisin/Util.pm
 script/raisin
-t/10-app-netsted_route_params.t
-t/10-app-params.t
-t/10-app-routes.t
-t/20-plugin-apidocs.t
-t/80-routes.t
-t/80-types-and-params.t
+t/func/app-routes.t
+t/func/netsted-route_params.t
+t/func/params.t
+t/func/plugin-apidocs.t
 t/release-pod-syntax.t
+t/unit/params.t
+t/unit/routes.t
+t/unit/types.t

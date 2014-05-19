@@ -5,24 +5,11 @@ use warnings;
 use FindBin '$Bin';
 use Test::More;
 
-use lib "$Bin/../lib";
+use lib "$Bin/../../lib";
 
 use Raisin::Types;
 use Raisin::Param;
 
-my $int = Raisin::Types::Integer->new(\123);
-is ref $int, 'Raisin::Types::Integer', 'Integer: OK';
-$int = Raisin::Types::Integer->new(\1.23);
-is $int, undef, 'Integer: FAILED';
-
-my $float_value = 1.23;
-my $float = Raisin::Types::Float->new(\$float_value);
-is ref $float, 'Raisin::Types::Float', 'Float: OK';
-$float = Raisin::Types::Float->new(\'string');
-is $float, undef, 'Float: FAILED';
-is $float_value, '1.2300', 'Float: in';
-
-#required/optional => [name, type, default, regex]
 my @types = (
     optional => ['sclr', 'Raisin::Types::Scalar'],
     optional => ['str', 'Raisin::Types::String', undef, qr/regex/],

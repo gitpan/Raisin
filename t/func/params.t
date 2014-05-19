@@ -11,7 +11,7 @@ use Test::More;
 use YAML;
 use JSON;
 
-use lib "$Bin/../lib";
+use lib "$Bin/../../lib";
 
 my %PARAMS = (
     param0 => 0,
@@ -110,9 +110,8 @@ test_psgi $json_app, sub {
     #note $res->content_type;
     #note $res->content;
 
-    like $res->content, qr/500/, 'POST YAML FAILED';
-    #my $data = Load($res->content);
-    #is_deeply $data, \%PARAMS, 'POST YAML';
+    my $data = decode_json($res->content);
+    is_deeply $data, \%PARAMS, 'POST YAML';
 };
 
 test_psgi $json_app, sub {

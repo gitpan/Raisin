@@ -1,5 +1,5 @@
 {
-   "abstract" : "REST-like API micro-framework for Perl.",
+   "abstract" : "REST-like API web micro-framework for Perl.",
    "author" : [
       "Artur Khabibullin - rtkh <at> cpan.org"
    ],
@@ -63,7 +63,7 @@
          "web" : "https://github.com/khrt/Raisin"
       }
    },
-   "version" : "0.27",
+   "version" : "0.28",
    "x_contributors" : [
       "Artur Kh <khrt@ya.ru>"
    ]
