@@ -38,6 +38,11 @@ t/func/netsted-route_params.t
 t/func/params.t
 t/func/plugin-apidocs.t
 t/release-pod-syntax.t
+t/unit/api.t
 t/unit/params.t
+t/unit/plugin.t
+t/unit/request.t
+t/unit/response.t
 t/unit/routes.t
 t/unit/types.t
+t/unit/util.t

@@ -3,6 +3,7 @@ NAME
 
 SYNOPSIS
         use Raisin::API;
+        use Raisin::Types;
 
         my %USERS = (
             1 => {
@@ -17,7 +18,7 @@ SYNOPSIS
             },
         );
 
-        namespace '/user' => sub {
+        namespace user => sub {
             params [
                 #required/optional => [name, type, default, regex]
                 optional => ['start', 'Raisin::Types::Integer', 0],
@@ -63,7 +64,7 @@ SYNOPSIS
             sub {
                 get sub {
                     my $params = shift;
-                    %USERS{ $params->{id} };
+                    $USERS{ $params->{id} };
                 };
             };
         };
