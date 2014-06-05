@@ -18,6 +18,7 @@ examples/singular/routes.pl
 lib/Raisin.pm
 lib/Raisin/API.pm
 lib/Raisin/Attributes.pm
+lib/Raisin/Logger.pm
 lib/Raisin/Param.pm
 lib/Raisin/Plugin.pm
 lib/Raisin/Plugin/APIDocs.pm
