@@ -1,10 +1,23 @@
-package Rapp::User;
+#!/usr/bin/env perl
 
 use strict;
 use warnings;
 
+use Data::Dumper;
+use FindBin;
+use List::Util qw(max);
+
+use lib "$FindBin::Bin/../../lib"; # ->Raisin/lib
+
 use Raisin::API;
-use Raisin::Types;
+use Types::Standard qw(Int Str);
+
+# GET  /user
+# POST /user
+# GET  /user/<id>
+# PUT  /user/<id>
+# GET  /user/<id>/bump
+# PUT  /user/<id>/bump
 
 # USERS
 my %USERS = (
@@ -20,13 +33,17 @@ my %USERS = (
     },
 );
 
+plugin 'APIDocs';
+plugin 'Logger', outputs => [['Screen', min_level => 'debug']];
+api_format 'yaml';
+
 # /user
 namespace user => sub {
     # list all users
     params [
-        #required/optional => [name, type, default, values]
-        optional => ['start', 'Raisin::Types::Integer', 0, qr/^\d+$/],
-        optional => ['count', 'Raisin::Types::Integer', 10, qr/^\d+$/],
+        #required/optional => [name, type, default, regex]
+        optional => ['start', Int, 0],
+        optional => ['count', Int, 10],
     ],
     get => sub {
         my $params = shift;
@@ -43,11 +60,18 @@ namespace user => sub {
         { data => \@slice }
     };
 
+    get 'all' => sub {
+        my @users
+            = map { { id => $_, %{ $USERS{$_} } } }
+              sort { $a <=> $b } keys %USERS;
+        { data => \@users }
+    };
+
     # create new user
     params [
-        required => ['name', 'Raisin::Types::String'],
-        required => ['password', 'Raisin::Types::String'],
-        optional => ['email', 'Raisin::Types::String', undef, qr/prev-regex/],
+        required => ['name', Str],
+        required => ['password', Str],
+        optional => ['email', Str, undef, qr/[^@]@[^.].\w+/],
     ],
     post => sub {
         my $params = shift;
@@ -55,11 +79,11 @@ namespace user => sub {
         my $id = max(keys %USERS) + 1;
         $USERS{$id} = $params;
 
-        { success => 1 }
+        { success => $id }
     };
 
     # /user/<id>
-    route_param id => 'Raisin::Types::Integer',
+    route_param id => Int,
     sub {
         # get user
         get sub {
@@ -69,15 +93,19 @@ namespace user => sub {
 
         # edit user
         params [
-            optional => ['password', 'Raisin::Types::String'],
-            optional => ['email', 'Raisin::Types::String', undef, qr/next-regex/],
+            optional => ['password', Str],
+            optional => ['email', Str, undef, qr/[^@]@[^.].\w+/],
         ],
         put => sub {
             my $params = shift;
-            for (qw(password email)) {
+
+            my $updated = 0;
+            for (grep { $params->{$_} } qw(password email)) {
                 $USERS{ $params->{id} }{$_} = $params->{$_};
+                $updated = 1;
             }
-            { success => 1 }
+
+            { success => $updated }
         };
 
         # /user/<id>/bump
@@ -91,11 +119,17 @@ namespace user => sub {
             # bump user
             put sub {
                 my $params = shift;
-                $USERS{ $params->{id} }{bumped}++;
-                { success => 1 }
+                { success => ++$USERS{ $params->{id} }{bumped} }
             };
         };
     };
 };
 
-1;
+namespace failed => sub {
+    get sub {
+        res->status(409);
+        { data => param('failed') || 'BROKEN!' }
+    };
+};
+
+run;

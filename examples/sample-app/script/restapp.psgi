@@ -6,10 +6,11 @@ use warnings;
 use FindBin '$Bin';
 use Plack::Builder;
 
+# Include lib and Raisin/lib
 use lib ("$Bin/../lib", "$Bin/../../../lib");
 
-use Rapp;
+use RESTApp;
 
 builder {
-    mount '/api' => Rapp->new;
+    mount '/api' => RESTApp->new;
 };

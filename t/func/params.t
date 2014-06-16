@@ -22,26 +22,31 @@ my %PARAMS = (
 
 my $json_app = eval {
     use Raisin::API;
-    use Raisin::Types;
-    api_format 'JSON';
-    post params => [
-        requires => ['param0', 'Raisin::Types::Integer'],
-        required => ['param1', 'Raisin::Types::Integer'],
+    use Types::Standard qw(Int Str);
 
-        optional => ['param2', 'Raisin::Types::String'],
-        optional => ['param3', 'Raisin::Types::String'],
+    api_format 'JSON';
+    params [
+        requires => ['param0', Int],
+        required => ['param1', Int],
+
+        optional => ['param2', Str],
+        optional => ['param3', Str],
     ],
-    sub { shift };
+    post => sub { shift };
     run;
 };
 
 #my $yaml_app = eval {
 #    use Raisin::API;
-#    use Raisin::Types;
+#    use Types::Standard qw(Int Str);
+#
 #    api_format 'YAML';
 #    post params => [
-#        optional => ['param1', 'Raisin::Types::String'],
-#        optional => ['param2', 'Raisin::Types::String'],
+#        requires => ['param0', Int],
+#        required => ['param1', Int],
+#
+#        optional => ['param2', Str],
+#        optional => ['param3', Str],
 #    ],
 #    sub { shift };
 #    run;

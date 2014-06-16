@@ -12,9 +12,9 @@ use Raisin::Routes;
 
 use Raisin::Util;
 
-use constant DEFAULT_SERIALIZER => 'Raisin::Plugin::Format::TEXT';
+use constant DEFAULT_SERIALIZER => 'Raisin::Plugin::Format::YAML';
 
-our $VERSION = '0.30';
+our $VERSION = '0.35';
 
 sub new {
     my ($class, %args) = @_;
@@ -78,23 +78,23 @@ sub run {
         $app = $mw->wrap($app, @$args);
     }
 
+    # load fallback logger (Raisin::Logger)
+    $self->load_plugin('Logger', fallback => 1);
+
+    # Build API docs if could
+    if ($self->can('build_api_docs')) {
+        $self->build_api_docs;
+    }
+
     return $app;
 }
 
 sub psgi {
     my ($self, $env) = @_;
 
-    # load fallback logger (Raisin::Logger)
-    $self->load_plugin('Logger', fallback => 1);
-
     # Diffrent for each response
     my $req = $self->req(Raisin::Request->new($self, $env));
     my $res = $self->res(Raisin::Response->new($self));
-
-    # Build API docs if needed
-    if ($self->can('build_api_docs')) {
-        $self->build_api_docs;
-    }
 
     # HOOK Before
     $self->hook('before')->($self);
@@ -225,7 +225,7 @@ Raisin - REST-like API web micro-framework for Perl.
 =head1 SYNOPSIS
 
     use Raisin::API;
-    use Raisin::Types;
+    use Types::Standard qw(Int Str);
 
     my %USERS = (
         1 => {
@@ -243,19 +243,19 @@ Raisin - REST-like API web micro-framework for Perl.
     namespace user => sub {
         params [
             #required/optional => [name, type, default, regex]
-            optional => ['start', 'Raisin::Types::Integer', 0],
-            optional => ['count', 'Raisin::Types::Integer', 10],
+            optional => ['start', Int, 0],
+            optional => ['count', Int, 10],
         ],
         get => sub {
             my $params = shift;
-            my ($start, $count) = ($params->{start}, $params->{count});
 
             my @users
                 = map { { id => $_, %{ $USERS{$_} } } }
                   sort { $a <=> $b } keys %USERS;
 
-            $start = $start > scalar @users ? scalar @users : $start;
-            $count = $count > scalar @users ? scalar @users : $count;
+            my $max_count = scalar(@users) - 1;
+            my $start = $params->{start} > $max_count ? $max_count : $params->{start};
+            my $count = $params->{count} > $max_count ? $max_count : $params->{count};
 
             my @slice = @users[$start .. $count];
             { data => \@slice }
@@ -269,9 +269,9 @@ Raisin - REST-like API web micro-framework for Perl.
         };
 
         params [
-            required => ['name', 'Raisin::Types::String'],
-            required => ['password', 'Raisin::Types::String'],
-            optional => ['email', 'Raisin::Types::String', undef, qr/.+\@.+/],
+            required => ['name', Str],
+            required => ['password', Str],
+            optional => ['email', Str, undef, qr/.+\@.+/],
         ],
         post => sub {
             my $params = shift;
@@ -282,7 +282,7 @@ Raisin - REST-like API web micro-framework for Perl.
             { success => 1 }
         };
 
-        route_param 'id' => 'Raisin::Types::Integer',
+        route_param id => Int,
         sub {
             get sub {
                 my $params = shift;
@@ -311,9 +311,9 @@ Adds a route to application.
 
 Define a route parameter as a namespace C<route_param>.
 
-    route_param id => 'Raisin::Types::Integer', sub { ... };
+    route_param id => Int, sub { ... };
 
-=head2 params, delete, get, patch, post, put
+=head2 params, del, get, patch, post, put
 
 It is are shortcuts to C<route> restricted to the corresponding HTTP method.
 
@@ -333,17 +333,17 @@ Where only C<subroutine> is required.
 
     get sub { 'GET' };
 
-    delete 'all' => sub { 'OK' };
+    del 'all' => sub { 'OK' };
 
     params [
-        required => ['id', 'Raisin::Types::Integer'],
-        optional => ['key', 'Raisin::Types::String'],
+        required => ['id', Int],
+        optional => ['key', Str],
     ],
     get => sub { 'GET' };
 
     params [
-        required => ['id', 'Raisin::Types::Integer'],
-        optional => ['name', 'Raisin::Types::String'],
+        required => ['id', Int],
+        optional => ['name', Str],
     ],
     put => 'all' => sub {
         'PUT'
@@ -488,8 +488,8 @@ Parameters can be C<required> and C<optional>. C<optional> parameters can have a
 default value.
 
     get params => [
-        required => ['name', 'Raisin::Types::String'],
-        optional => ['number', 'Raisin::Types::Integer', 10],
+        required => ['name', Str],
+        optional => ['number', Int, 10],
     ],
     sub {
         my $params = shift;
@@ -523,30 +523,14 @@ Optional parameters can have a default value.
 
 =head2 Types
 
-Here is built-in types
+Raisin supports Moo(se)-compatible type constraint
+so you can use any of the L<Moose>, L<Moo> or L<Type::Tiny> type constraints.
 
-=over
+By default L<Raisin> depends on L<Type::Tiny> and it's L<Types::Standard>
+type contraint library.
 
-=item *
-
-L<Raisin::Types::Float>
-
-=item *
-
-L<Raisin::Types::Integer>
-
-=item *
-
-L<Raisin::Types::String>
-
-=item *
-
-L<Raisin::Types::Scalar>
-
-=back
-
-You can create your own types as well. See examples in L<Raisin::Types>.
-Also see L<Raisin::Types::Base>.
+You can create your own types as well.
+See L<Type::Tiny::Manual> and L<Moose::Manual::Types>.
 
 =head1 HOOKS
 
@@ -644,13 +628,6 @@ Fallback to C<TEXT>.
 
 =back
 
-=head1 AUTHENTICATION
-
-TODO
-L<Raisin::Plugin::Auth>
-L<Raisin::Plugin::Auth::Basic>
-L<Raisin::Plugin::Auth::Token>
-
 =head1 LOGGING
 
 Raisin has a built-in logger and support for C<Log::Dispatch>.
@@ -676,7 +653,7 @@ See L<Raisin::Plugin::Logger>.
 
 You can see application routes with the following command:
 
-    $ raisin --routes examples/singular/routes.pl
+    $ raisin --routes examples/simple/routes.pl
       GET     /user
       GET     /user/all
       POST    /user
@@ -688,7 +665,7 @@ You can see application routes with the following command:
 
 Verbose output with route parameters:
 
-    $ raisin --routes --params examples/singular/routes.pl
+    $ raisin --routes --params examples/simple/routes.pl
       GET     /user
         optional: `start', type: Integer, default: 0
         optional: `count', type: Integer, default: 10
