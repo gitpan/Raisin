@@ -33,6 +33,6 @@ resources:
   bugtracker: https://github.com/khrt/Raisin/issues
   homepage: https://github.com/khrt/Raisin
   repository: https://github.com/khrt/Raisin.git
-version: '0.35'
+version: '0.36'
 x_contributors:
   - 'Artur Kh <khrt@ya.ru>'
