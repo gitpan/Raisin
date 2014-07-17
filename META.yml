@@ -23,7 +23,6 @@ no_index:
     - examples
 requires:
   JSON: '2.90'
-  Log::Dispatch: '2.39'
   Plack: '1.0030'
   Plack::Middleware::CrossOrigin: '0.009'
   Type::Tiny: '0.044'
@@ -33,6 +32,6 @@ resources:
   bugtracker: https://github.com/khrt/Raisin/issues
   homepage: https://github.com/khrt/Raisin
   repository: https://github.com/khrt/Raisin.git
-version: '0.36'
+version: '0.4000'
 x_contributors:
   - 'Artur Kh <khrt@ya.ru>'

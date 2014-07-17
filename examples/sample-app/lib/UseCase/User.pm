@@ -28,7 +28,7 @@ sub create {
     my %params = @_;
 
     my $id = max(keys %USERS) + 1;
-    $USERS{$id} = %params;
+    $USERS{$id} = \%params;
 
     $id;
 }
@@ -42,6 +42,7 @@ sub edit {
     my ($id, %params) = @_;
 
     foreach my $p (keys %params) {
+        next unless $params{$p};
         $USERS{$id}{$p} = $params{$p};
     }
 
@@ -56,7 +57,7 @@ sub delete {
 
 sub bump {
     my $id = shift;
-    $USERS{$id}{bumped}++;
+    ++$USERS{$id}{bumped};
 }
 
 1;

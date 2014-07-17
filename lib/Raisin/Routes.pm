@@ -4,9 +4,10 @@ use strict;
 use warnings;
 
 use Carp;
+use List::Util 'pairs';
+use Raisin::Attributes;
 use Raisin::Param;
 use Raisin::Routes::Endpoint;
-use Raisin::Attributes;
 
 has 'cache' => {};
 has 'list' => {};
@@ -18,41 +19,46 @@ sub new {
     $self;
 }
 
+# method* => ''
+# path* => ''
+# code* => sub {}
+#
+# api_format => ''
+# desc => ''
+# named => []
+# params => []
 sub add {
-    my ($self, $method, $path, @args) = @_;
+    #my ($self, $method, $path, @args) = @_;
+    my ($self, %params) = @_;
+#use DDP;
+#p %params;
+#print " \n\n -- \n\n ";
+
+    my $method = uc $params{method};
+    my $path = $params{path};
 
     if (!$method || !$path) {
         carp "Method and path are required";
         return;
     }
 
-    # @args:
-    #   * [optional] named => []
-    #   * [optional] params => []
-    #   * [optional] path
-    #   * [required] code ref
-
-    my $code = pop @args;
+    my $code = $params{code};
     # Support only code as route destination
     if (!$code || !(ref($code) eq 'CODE')) {
-        carp "Invalid route params for ${ uc $method } $path";
+        carp "Invalid route params for $method $path";
         return;
     }
 
-    # Named route params
-    if (scalar @args == 1 || scalar @args == 3) {
-        $path = $path . '/' . pop @args;
-    }
+    my $desc = $params{desc};
 
-    my @params;
-    if (@args && (my %args = @args)) {
-        foreach my $key (qw(params named)) {
-            for (my $i = 0; $i < scalar @{ $args{$key} || [] }; $i += 2) {
-                push @params, Raisin::Param->new(
-                    named => $key eq 'named' ? 1 : 0,
-                    param => [$args{$key}[$i], $args{$key}[$i + 1]]
-                );
-            }
+    my @pp;
+    for my $key (qw(params named)) {
+        for my $p (pairs @{ $params{$key} }) {
+            push @pp, Raisin::Param->new(
+                named => $key eq 'named',
+                type => $p->[0], # -> requires/optional
+                spec => $p->[1], # -> { name => ..., type => ... }
+            );
         }
     }
 
@@ -67,9 +73,11 @@ sub add {
 
     my $ep
         = Raisin::Routes::Endpoint->new(
+            api_format => $params{api_format},
             code => $code,
-            params => \@params,
+            desc => $desc,
             method => $method,
+            params => \@pp,
             path => $path,
         );
     push @{ $self->{routes} }, $ep;

@@ -13,20 +13,29 @@ use Types::Standard qw(Str);
 
 my $r = Raisin::Routes->new;
 
-ok $r->add(POST => '/dump/:id', sub {'DUMP'}), 'add /dump/:id';
-ok $r->add(POST => '/dump', sub {'DUMP'}), 'add /dump';
+#
+# TODO:
+#
+#   get sub {};
+#   get '/foo' => sub {};
+#   params [...], get => sub {};
+#   params [...], get '/bar' => sub {};
+#
+
+ok $r->add(method => 'POST', path => '/dump/:id', code => sub {'DUMP-ID'}), 'add /dump/:id';
+ok $r->add(method => 'POST', path => '/dump', code => sub {'DUMP'}), 'add /dump';
 ok $r->add(
-        POST   => '/person(?<format>\.\w+)?',
+        method => 'POST',
+        path => '/person(?<format>\.\w+)?',
         params => [
-            requires => ['name',  Str],
-            optional => ['email', Str]
+            requires => { name => 'name',  type => Str },
+            optional => { name => 'email', type => Str }
         ],
-        sub {'PERSON'}
+        code => sub { 'PERSON' }
     ),
     'add /person(?<format>)';
 
 is $r->list->{POST}{'/person(?<format>\.\w+)?'}, 3, 'check order in routes list';
-
 is_deeply $r->cache, {}, 'clear cache';
 
 my $subs;

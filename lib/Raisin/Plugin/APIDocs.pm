@@ -10,20 +10,22 @@ use JSON 'encode_json';
 use constant SWAGGER_VERSION => '1.2';
 
 sub build {
-    my $self = shift;
+    my ($self, %args) = @_;
 
     # Enable CORS
-    $self->app->add_middleware(
-        'CrossOrigin',
-        origins => '*',
-        methods => [qw(GET POST DELETE PUT PATCH OPTIONS)],
-        headers => [qw(api_key Authorization Content-Type)]
-    );
+    if (lc($args{enable}) eq 'cors') {
+        $self->app->add_middleware(
+            'CrossOrigin',
+            origins => '*',
+            methods => [qw(GET POST DELETE PUT PATCH OPTIONS)],
+            headers => [qw(api_key Authorization Content-Type)]
+        );
+    }
 
     $self->register(build_api_docs => sub { $self->build_api_docs });
 }
 
-# TODO
+# TODO: simplify
 sub build_api_docs {
     my $self = shift;
     return 1 if $self->{done};
@@ -34,58 +36,49 @@ sub build_api_docs {
 
     # Prepare API data
     for my $r (@{ $app->routes->routes }) {
-        my $path = $r->path;
-        $path =~ s#:([^/]+)#{$1}#g;
-
-        my ($ns) = $path =~ m#^(/[^/]+)#;
-
-        my @parameters;
+        my @params;
         for my $p (@{ $r->params }) {
+            my $param_type = do {
+                if    ($p->named)                 {'path'}
+                elsif ($r->method =~ /post|put/i) {'form'}
+                else                              {'query'}
+            };
 
-            # Types
-            #  - boolean
-            #  - integer, int32
-            #  - integer, int64
-            #  - number, double
-            #  - number, float
-            #  - string
-            #  - string, byte
-            #  - string, date
-            #  - string, date-time
-
-            my $param_type
-                = $p->named
-                ? 'path'
-                : $r->method =~ /POST|PUT/
-                    ? 'form'
-                    : 'query';
-
-            my %p = (
-                allowMultiple => JSON::true,
-                defaultValue => $p->default || JSON::false,
-                description => uc($p->name) . ' DESCRIPTION',
-                format => ref $p->type,
-                name => $p->name,
-                paramType => $param_type,
-                required => $p->required ? JSON::true : JSON::false,
-                type => $p->type->name,
-            );
-            push @parameters, \%p;
+            push @params,
+                {
+                    allowMultiple => JSON::true,
+                    defaultValue  => $p->default // JSON::false,
+                    description   => $p->desc,
+                    format        => $p->type->display_name,
+                    name          => $p->name,
+                    paramType     => $param_type,
+                    required      => $p->required ? JSON::true : JSON::false,
+                    type          => $p->type->name,
+                };
         }
 
-        my %api = (
-            path => $path,
-            operations => [{
-                method => $r->method,
-                nickname => $r->method . '_' . $path,
-                notes => '',
-                parameters => \@parameters,
-                summary => '',
-                type => '',
-            }],
-        );
+        my $path = $r->path;
 
-        push @{ $apis{$ns} }, \%api;
+        # :id -> {id}
+        $path =~ s#:([^/]+)#{$1}#msxg;
+
+        # look for namespace
+        my ($ns) = $path =~ m#^(/[^/]+)#;
+
+        # -> { ns => [api, ...] }
+        push @{ $apis{$ns} },
+            {
+                path => $path,
+                description => '',
+                operations  => [{
+                    method     => $r->method,
+                    nickname   => $r->method . '_' . $path,
+                    notes      => '',
+                    parameters => \@params,
+                    summary    => $r->desc,
+                    type       => '',
+                }],
+            };
     }
 
     my %template = (
@@ -96,37 +89,47 @@ sub build_api_docs {
     # Prepare index
     my %index = (%template);
     for my $ns (keys %apis) {
+        my $desc = $app->resource_desc($ns) || "Operations about ${ \( $ns =~ m#/(.+)# ) }";
+
         my $api = {
             path => $ns,
-            description => "Operations about ${ \( $ns =~ m#/(.+)# ) }",
+            description => $desc,
         };
 
         push @{ $index{apis} }, $api;
     }
 
-    # Add routes
     $app->add_route(
-        GET => '/api-docs',
-        sub { encode_json \%index }
+        method => 'GET',
+        path => '/api-docs',
+        code => sub { encode_json \%index }
     );
 
     for my $ns (keys %apis) {
         my $base_path = $app->req ? $app->req->base->as_string : '';
-        $base_path =~ s#/$##;
+        $base_path =~ s#/$##msx;
 
-        my $content_type = 'application/yaml'; # TODO: add more?
+        my @content_type = do {
+            if ($app->api_format) {
+                ($app->api_format)
+            }
+            else {
+                qw(application/yaml application/json);
+            }
+        };
 
         my %description = (
             %template,
             apis => $apis{$ns},
             basePath => $base_path,
-            produces => [$content_type],
+            produces => [@content_type],
             resourcePath => $ns,
         );
 
         $app->add_route(
-            GET => "/api-docs${ns}",
-            sub { encode_json \%description }
+            method => 'GET',
+            path => "/api-docs${ns}",
+            code => sub { encode_json \%description }
         );
     }
 

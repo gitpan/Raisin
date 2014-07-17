@@ -17,8 +17,6 @@ examples/sample-app/lib/UseCase/User.pm
 examples/sample-app/script/restapp.psgi
 examples/sample-app/script/simple-restapp.pl
 examples/simple/darth.pl
-examples/simple/dump.pl
-examples/simple/routes.pl
 examples/simple/simple.pl
 lib/Raisin.pm
 lib/Raisin/API.pm
@@ -43,6 +41,7 @@ t/func/params.t
 t/func/plugin-apidocs.t
 t/release-pod-syntax.t
 t/unit/api.t
+t/unit/logger.t
 t/unit/params.t
 t/unit/plugin.t
 t/unit/request.t

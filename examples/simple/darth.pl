@@ -22,12 +22,16 @@ my %USERS = (
     },
 );
 
-namespace user => sub {
+plugin 'APIDocs', enable => 'CORS';
+api_format 'json';
+
+desc 'Actions on users',
+resource => user => sub {
     params [
-        #required/optional => [name, type, default, regex]
-        optional => ['start', Int, 0],
-        optional => ['count', Int, 10],
+        optional => { name => 'start', type => Int, default => 0, desc => 'Pager (start)' },
+        optional => { name => 'count', type => Int, default => 10, desc => 'Pager (count)' },
     ],
+    desc => 'List users',
     get => sub {
         my $params = shift;
 
@@ -43,7 +47,8 @@ namespace user => sub {
         { data => \@slice }
     };
 
-    get 'all' => sub {
+    desc 'List all users at once',
+    get => 'all' => sub {
         my @users
             = map { { id => $_, %{ $USERS{$_} } } }
               sort { $a <=> $b } keys %USERS;
@@ -51,10 +56,11 @@ namespace user => sub {
     };
 
     params [
-        required => ['name', Str],
-        required => ['password', Str],
-        optional => ['email', Str, undef, qr/.+\@.+/],
+        requires => { name => 'name', type => Str, desc => 'User name' },
+        requires => { name => 'password', type => Str, desc => 'User password' },
+        optional => { name => 'email', type => Str, default => undef, regex => qr/.+\@.+/, desc => 'User email' },
     ],
+    desc => 'Create new user',
     post => sub {
         my $params = shift;
 
@@ -64,12 +70,22 @@ namespace user => sub {
         { success => 1 }
     };
 
-    route_param id => Int,
+    route_param { name => 'id', type => Int, desc => 'User ID' },
     sub {
-        get sub {
+        desc 'Show user',
+        get => sub {
             my $params = shift;
             $USERS{ $params->{id} };
         };
+
+        desc 'Delete user',
+        del => sub {
+            my $params = shift;
+            { success => delete $USERS{ $params->{id} } };
+        };
+
+        desc 'NOP',
+        put => sub { 'nop' };
     };
 };
 
