@@ -17,7 +17,6 @@ examples/sample-app/lib/UseCase/User.pm
 examples/sample-app/script/restapp.psgi
 examples/sample-app/script/simple-restapp.pl
 examples/simple/darth.pl
-examples/simple/simple.pl
 lib/Raisin.pm
 lib/Raisin/API.pm
 lib/Raisin/Attributes.pm

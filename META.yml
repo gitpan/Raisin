@@ -22,7 +22,9 @@ no_index:
     - eg
     - examples
 requires:
+  Hash::MultiValue: '0'
   JSON: '2.90'
+  List::Util: '1.35'
   Plack: '1.0030'
   Plack::Middleware::CrossOrigin: '0.009'
   Type::Tiny: '0.044'
@@ -32,6 +34,6 @@ resources:
   bugtracker: https://github.com/khrt/Raisin/issues
   homepage: https://github.com/khrt/Raisin
   repository: https://github.com/khrt/Raisin.git
-version: '0.4001'
+version: '0.4002'
 x_contributors:
   - 'Artur Kh <khrt@ya.ru>'
