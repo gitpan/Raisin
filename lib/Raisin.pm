@@ -11,7 +11,7 @@ use Raisin::Response;
 use Raisin::Routes;
 use Raisin::Util;
 
-our $VERSION = '0.4002';
+our $VERSION = '0.4003';
 
 sub new {
     my ($class, %args) = @_;
@@ -174,7 +174,10 @@ sub psgi {
         1;
     } or do {
         my $e = longmess($@);
-        $res->render_500($e);
+        $self->log(error => $e);
+
+        my $msg = $ENV{PLACK_ENV} eq 'deployment' ? 'Internal error' : $e;
+        $res->render_500($msg);
     };
 
     $self->finalize;
@@ -262,6 +265,9 @@ Raisin - REST-like API web micro-framework for Perl.
 
 =head1 SYNOPSIS
 
+    use strict;
+    use warnings;
+
     use Raisin::API;
     use Types::Standard qw(Int Str);
 
@@ -283,11 +289,11 @@ Raisin - REST-like API web micro-framework for Perl.
 
     desc 'Actions on users',
     resource => user => sub {
-        params [
+        desc 'List users',
+        params => [
             optional => { name => 'start', type => Int, default => 0, desc => 'Pager (start)' },
             optional => { name => 'count', type => Int, default => 10, desc => 'Pager (count)' },
         ],
-        desc => 'List users',
         get => sub {
             my $params = shift;
 
@@ -311,12 +317,12 @@ Raisin - REST-like API web micro-framework for Perl.
             { data => \@users }
         };
 
-        params [
+        desc 'Create new user',
+        params => [
             requires => { name => 'name', type => Str, desc => 'User name' },
             requires => { name => 'password', type => Str, desc => 'User password' },
             optional => { name => 'email', type => Str, default => undef, regex => qr/.+\@.+/, desc => 'User email' },
         ],
-        desc => 'Create new user',
         post => sub {
             my $params = shift;
 
@@ -326,7 +332,11 @@ Raisin - REST-like API web micro-framework for Perl.
             { success => 1 }
         };
 
-        route_param { name => 'id', type => Int, desc => 'User ID' },
+        desc 'Actions on the user',
+        params => [
+            requires => { name => 'id', type => Int, desc => 'User ID' },
+        ],
+        route_param => 'id',
         sub {
             desc 'Show user',
             get => sub {
@@ -343,7 +353,7 @@ Raisin - REST-like API web micro-framework for Perl.
             desc 'NOP',
             put => sub { 'nop' };
         };
-    };
+    }
 
     run;
 
