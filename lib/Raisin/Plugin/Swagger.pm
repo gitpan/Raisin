@@ -1,4 +1,4 @@
-package Raisin::Plugin::APIDocs;
+package Raisin::Plugin::Swagger;
 
 use strict;
 use warnings;
@@ -13,7 +13,7 @@ sub build {
     my ($self, %args) = @_;
 
     # Enable CORS
-    if (lc($args{enable}) eq 'cors') {
+    if ($args{enable} && lc($args{enable}) eq 'cors') {
         $self->app->add_middleware(
             'CrossOrigin',
             origins => '*',
@@ -65,7 +65,7 @@ sub build_api_docs {
         # look for namespace
         my ($ns) = $path =~ m#^(/[^/]+)#;
 
-        # -> { ns => [api, ...] }
+        # -> [ $ns => { ... } ]
         push @{ $apis{$ns} },
             {
                 path => $path,
@@ -142,11 +142,11 @@ __END__
 
 =head1 NAME
 
-Raisin::Plugin::APIDocs - Generate API documentation.
+Raisin::Plugin::Swagger - Generate API documentation.
 
 =head1 SYNOPSIS
 
-    plugin 'APIDocs';
+    plugin 'Swagger';
 
 =head1 DESCRIPTION
 
@@ -155,5 +155,11 @@ compatible API documentaions.
 
 Provides documentation in Swagger compatible format by C</api-docs> URL.
 You can use this url in L<Swagger UI|http://swagger.wordnik.com/>.
+
+=head1 CORS
+
+Cross-origin resource sharing
+
+    plugin 'Swagger', enable => 'CORS';
 
 =cut

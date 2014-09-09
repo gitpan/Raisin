@@ -16,6 +16,7 @@ examples/sample-app/lib/UseCase/Host.pm
 examples/sample-app/lib/UseCase/User.pm
 examples/sample-app/script/restapp.psgi
 examples/sample-app/script/simple-restapp.pl
+examples/simple/darth-old.pl
 examples/simple/darth.pl
 lib/Raisin.pm
 lib/Raisin/API.pm
@@ -23,11 +24,11 @@ lib/Raisin/Attributes.pm
 lib/Raisin/Logger.pm
 lib/Raisin/Param.pm
 lib/Raisin/Plugin.pm
-lib/Raisin/Plugin/APIDocs.pm
 lib/Raisin/Plugin/Format/JSON.pm
 lib/Raisin/Plugin/Format/TEXT.pm
 lib/Raisin/Plugin/Format/YAML.pm
 lib/Raisin/Plugin/Logger.pm
+lib/Raisin/Plugin/Swagger.pm
 lib/Raisin/Request.pm
 lib/Raisin/Response.pm
 lib/Raisin/Routes.pm
@@ -40,6 +41,7 @@ t/func/params.t
 t/func/plugin-apidocs.t
 t/release-pod-syntax.t
 t/unit/api.t
+t/unit/format.t
 t/unit/logger.t
 t/unit/params.t
 t/unit/plugin.t

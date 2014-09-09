@@ -24,11 +24,12 @@ our @EXPORT = (
     @ROUTES_METHODS,
 );
 
-my $app;
-
-#my %SETTINGS = (_NS => ['']);
 my %SETTINGS = ();
 my @NS = ('');
+
+my $app;
+
+my $OLD_API = 0;
 
 sub import {
     my $class = shift;
@@ -36,6 +37,12 @@ sub import {
 
     strict->import;
     warnings->import;
+
+    my $params = shift;
+    if ($params && $params eq '-old') {
+        carp 'You are using an obsolete API';
+        $OLD_API = 1;
+    }
 
     my $caller = caller;
     $app ||= Raisin->new(caller => $caller);
@@ -70,10 +77,15 @@ sub resource {
 
     if ($name) {
         $name =~ s{^/}{}msx;
+        push @NS, $name;
+
+        # Not present in previous API
+        if ($SETTINGS{desc}) {
+            my $path = join '/', @NS;
+            $app->resource_desc($path, delete $SETTINGS{desc});
+        }
 
         my %prev_settings = %SETTINGS;
-
-        push @NS, $name;
         @SETTINGS{ keys %args } = values %args;
 
         # Going deeper
@@ -88,7 +100,14 @@ sub resource {
 }
 sub namespace { resource(@_) }
 
-sub route_param {
+sub route_param { $OLD_API ? route_param_OLD(@_) : route_param_NEW(@_) }
+
+sub route_param_NEW {
+    my ($param, $code) = @_;
+    resource(":$param", $code, named => delete $SETTINGS{params});
+}
+
+sub route_param_OLD {
     my $code = pop @_;
 
     my ($param, $spec);
@@ -103,11 +122,10 @@ sub route_param {
 
     resource(":$param", $code, named => [requires => $spec]);
 }
-
 #
 # Actions
 #
-sub del     { _add_route('del', @_) }
+sub del     { _add_route('delete', @_) } # `del` in previous API
 sub get     { _add_route('get', @_) }
 sub head    { _add_route('head', @_) }
 sub options { _add_route('options', @_) }
@@ -115,10 +133,36 @@ sub patch   { _add_route('patch', @_) }
 sub post    { _add_route('post', @_) }
 sub put     { _add_route('put', @_) }
 
-sub desc    { _add_route('desc', @_) }
-sub params  { _add_route('params', @_) }
+sub desc { $OLD_API ? desc_OLD(@_) : desc_NEW(@_) }
+sub params { $OLD_API ? params_OLD(@_) : params_NEW(@_) }
 
-sub _add_route {
+sub desc_NEW { $SETTINGS{desc} = shift }
+sub params_NEW { $SETTINGS{params} = ref($_[0]) eq 'ARRAY' ? $_[0] : \@_ }
+
+sub desc_OLD { _add_route('desc', @_) }
+sub params_OLD { _add_route('params', @_) }
+
+sub _add_route { $OLD_API ? _add_route_OLD(@_) : _add_route_NEW(@_) }
+
+sub _add_route_NEW {
+    my @params = @_;
+
+    my $code = pop @params;
+
+    my ($method, $path) = @params;
+    $path = resource() . ($path ? "/$path" : '');
+
+    $app->add_route(
+        code => $code,
+        method => $method,
+        path => $path,
+        desc => delete $SETTINGS{desc},
+        params => delete $SETTINGS{params},
+        %SETTINGS,
+    );
+}
+
+sub _add_route_OLD {
     my @params = @_;
 
     my %pp = (%SETTINGS, code => pop @params);
@@ -129,8 +173,7 @@ sub _add_route {
         my $v = $params[$i + 1] || undef;
 
         if ($k eq 'desc' || $k eq 'params') {
-            $pp{ $k } = $v;
-#            splice @params, $i, 2, '', '';
+            $pp{$k} = $v;
         }
         elsif (grep { $k =~ /^$_$/imsx } @HTTP_METHODS) {
             $pp{method} = $k =~ /del/i ? 'delete' : $k;
@@ -147,14 +190,11 @@ sub _add_route {
     }
 
     if ($pp{resource}) {
-        my $path = resource($pp{resource}, $pp{code});
-        #$path .= $pp{resource};
-        $app->add_resource_desc(%pp);
+        my $path = resource($pp{resource}, $pp{code}) . $pp{resource};
+        $app->resource_desc($path, $pp{desc});
     }
     elsif ($pp{route_param}) {
         my $path = resource(":$pp{route_param}", $pp{code}, named => $pp{params});
-        #$path .= "/:$pp{route_param}";
-        #$app->add_resource_desc(resource => $path, desc => $pp{desc});
     }
     else {
         $app->add_route(%pp);
@@ -181,6 +221,7 @@ sub plugin { $app->load_plugin(@_) }
 sub api_default_format { $app->api_default_format(@_) }
 sub api_format { $app->api_format(@_) }
 
+# TODO: add namespace with version name/number
 sub api_version { $app->api_version(@_) }
 
 #
