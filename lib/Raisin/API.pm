@@ -7,10 +7,11 @@ use parent 'Exporter';
 
 use Carp;
 use Raisin;
+use Raisin::Entity;
 
 my @APP_CONF_METHODS = qw(api_default_format api_format api_version middleware mount plugin);
 my @APP_EXEC_METHODS = qw(new run);
-my @APP_METHODS = qw(req res param session);
+my @APP_METHODS = qw(req res param session present);
 my @HOOKS_METHODS = qw(before before_validation after_validation after);
 my @HTTP_METHODS = qw(del get head options patch post put);
 my @ROUTES_METHODS = qw(resource namespace route_param desc params);
@@ -212,6 +213,25 @@ sub param {
     $app->req->parameters->mixed;
 }
 sub session { $app->session(@_) }
+
+sub present {
+    my ($key, $data, %params) = @_;
+
+    my $value = do {
+        if (my $entity = $params{with}) {
+            $entity->compile($data);
+        }
+        else {
+            Raisin::Entity->compile($data);
+        }
+    };
+
+    my $body = res->body || {};
+    my $representation = { $key => $value, %$body };
+    res->body($representation);
+
+    return;
+}
 
 #
 # System

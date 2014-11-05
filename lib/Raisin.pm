@@ -11,7 +11,7 @@ use Raisin::Response;
 use Raisin::Routes;
 use Raisin::Util;
 
-our $VERSION = '0.5000';
+our $VERSION = '0.5100';
 
 sub new {
     my ($class, %args) = @_;
@@ -100,8 +100,8 @@ sub psgi {
     my $res = $self->res(Raisin::Response->new($self));
 
     # Build API docs
-    if ($self->can('build_api_docs')) {
-        $self->build_api_docs;
+    if ($self->can('build_api_spec')) {
+        $self->build_api_spec;
     }
 
     # HOOK Before
@@ -149,7 +149,10 @@ sub psgi {
             # Eval code
             my $data = $code->($req->declared_params);
 
-            if (defined $data) {
+            # TODO:
+            # set data to the res->body
+            # check only res->body
+            if (defined($data) || $res->body) {
                 # Handle delayed response
                 return $data if ref($data) eq 'CODE'; # TODO: check delayed responses
 
@@ -164,6 +167,7 @@ sub psgi {
 
         if (!$res->rendered) {
             $self->log(error => 'Nothing rendered');
+            # TODO: render something
         }
 
         1;
@@ -481,6 +485,22 @@ When it exists, you can retrieve and store per-session data.
 
     # read param
     say session->{name};
+
+=head2 present
+
+As a Grape Raisin support for a range ways to present your data as well.
+Raisin hash a built-in C<present> method, which accepts two arguments: the
+object to be presented and the options associated with it. The options hash may
+include C<with> key, which is defined the entity to expose. See L<Raisin::Entity>.
+
+    my $artists = $schema->resultset('Artist');
+
+    present data => $artists, with => 'MusicApp::Entity::Artist';
+    present count => $artists->count;
+
+L<Raisin::Entity> supports L<DBIx::Class> and L<Rose::DB::Object>.
+
+For details see examples in I<examples/entity> and L<Raisin::Entity>.
 
 =head2 api_default_format
 
@@ -874,6 +894,8 @@ Artur Khabibullin - rtkh E<lt>atE<gt> cpan.org
 
 This module was inspired both by Grape and L<Kelp>,
 which was inspired by L<Dancer>, which in its turn was inspired by Sinatra.
+
+=for HTML <a href="https://travis-ci.org/khrt/Raisin"><img src="https://travis-ci.org/khrt/Raisin.svg?branch=master"></a>
 
 =head1 LICENSE
 
