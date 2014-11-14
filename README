@@ -1,9 +1,11 @@
 NAME
-    Raisin - REST-like API web micro-framework for Perl.
+    Raisin - a REST API micro framework for Perl.
 
 SYNOPSIS
         use strict;
         use warnings;
+
+        use utf8;
 
         use Raisin::API;
         use Types::Standard qw(Any Int Str);
@@ -85,42 +87,40 @@ SYNOPSIS
                     my $params = shift;
                     { success => delete $USERS{ $params->{id} } };
                 };
-
-                desc 'NOP';
-                put sub { 'nop' };
             };
+        };
+
+        resource echo => sub {
+            params(
+                optional => { name => 'data0', type => Any, default => "ёй" },
+            );
+            get sub { shift };
+
+            desc 'NOP';
+            get nop => sub { };
         };
 
         run;
 
 DESCRIPTION
-    Raisin is a REST-like API web micro-framework for Perl. It's designed to
-    run on Plack, providing a simple DSL to easily develop RESTful APIs. It
-    was inspired by Grape <https://github.com/intridea/grape>.
+    Raisin is a REST API micro framework for Perl. It's designed to run on
+    Plack, providing a simple DSL to easily develop RESTful APIs. It was
+    inspired by Grape <https://github.com/intridea/grape>.
 
-BACKWARD COMPATIBILITY
-    Since version 0.5000 "Raisin" was migrated to the new API syntax.
-
-    You could still use an old style API for a while by passing an "-old"
-    key to the "Raisin::API".
-
-        use Raisin::API '-old';
-
-    See examples for more information.
-
-KEYWORDS
-  resource
-    Adds a route to application.
+FUNCTIONS
+  API DESCRIPTION
+   resource
+    Adds a route to an application.
 
         resource user => sub { ... };
 
-  route_param
+   route_param
     Define a route parameter as a namespace "route_param".
 
         route_param id => sub { ... };
 
-  del, get, patch, post, put
-    It's a shortcuts to "route" restricted to the corresponding HTTP method.
+   del, get, patch, post, put
+    Shortcuts to add a "route" restricted to the corresponding HTTP method.
 
         get sub { 'GET' };
 
@@ -141,9 +141,9 @@ KEYWORDS
             'PUT'
         };
 
-  desc
-    Can be applied to "resource" or any of HTTP method to add description
-    for operation or for resource.
+   desc
+    Can be applied to "resource" or any of the HTTP method to add a
+    description for an operation or for a resource.
 
         desc 'Some action';
         put sub { ... };
@@ -151,13 +151,15 @@ KEYWORDS
         desc 'Some operations group',
         resource => 'user' => sub { ... }
 
-  params
+   params
     Here you can define validations and coercion options for your
     parameters. Can be applied to any HTTP method and/or "route_param" to
     describe parameters.
 
         params(
-            requires => { name => 'key', type => Str }
+            requires => { name => 'name', type => Str },
+            optional => { name => 'start', type => Int, default => 0 },
+            optional => { name => 'count', type => Int, default => 10 },
         );
         get sub { ... };
 
@@ -168,77 +170,19 @@ KEYWORDS
 
     For more see "Validation-and-coercion" in Raisin.
 
-  req
-    An alias for "$self->req", which provides quick access to the
-    Raisin::Request object for the current route.
+   api_default_format
+    Specifies default API format mode when formatter doesn't specified by
+    API user. E.g. URI is asked without an extension ("json", "yaml") or
+    "Accept" header isn't specified.
 
-    Use "req" to get access to a request headers, params, etc.
-
-        use DDP;
-        p req->headers;
-        p req->params;
-
-        say req->header('X-Header');
-
-    See also Plack::Request.
-
-  res
-    An alias for "$self->res", which provides quick access to the
-    Raisin::Response object for the current route.
-
-    Use "res" to set up response parameters.
-
-        res->status(403);
-        res->headers(['X-Application' => 'Raisin Application']);
-
-    See also Plack::Response.
-
-  param
-    An alias for "$self->params", which returns request parameters. Without
-    arguments will return an array with request parameters. Otherwise it
-    will return the value of the requested parameter.
-
-    Returns Hash::MultiValue object.
-
-        say param('key'); # -> value
-        say param(); # -> { key => 'value', foo => 'bar' }
-
-  session
-    An alias for "$self->session", which returns "psgix.session" hash. When
-    it exists, you can retrieve and store per-session data.
-
-        # store param
-        session->{hello} = 'World!';
-
-        # read param
-        say session->{name};
-
-  present
-    As a Grape Raisin support for a range ways to present your data as well.
-    Raisin hash a built-in "present" method, which accepts two arguments:
-    the object to be presented and the options associated with it. The
-    options hash may include "with" key, which is defined the entity to
-    expose. See Raisin::Entity.
-
-        my $artists = $schema->resultset('Artist');
-
-        present data => $artists, with => 'MusicApp::Entity::Artist';
-        present count => $artists->count;
-
-    Raisin::Entity supports DBIx::Class and Rose::DB::Object.
-
-    For details see examples in *examples/entity* and Raisin::Entity.
-
-  api_default_format
-    Specify default API format when formatter doesn't specified. Default
-    value: "YAML".
+    Default value: "YAML".
 
         api_default_format 'json';
 
     See also "API-FORMATS" in Raisin.
 
-  api_format
-    Restricts API to use only specified formatter for serialize and
+   api_format
+    Restricts API to use only specified formatter to serialize and
     deserialize data.
 
     Already exists Raisin::Plugin::Format::JSON and
@@ -248,26 +192,27 @@ KEYWORDS
 
     See also "API-FORMATS" in Raisin.
 
-  api_version
-    Setup an API version header.
+   api_version
+    Sets up an API version header.
 
         api_version 1.23;
 
-  plugin
-    Loads Raisin module. A module options may be specified after a module
-    name. Compatible with Kelp modules.
+   plugin
+    Loads a Raisin module. A module options may be specified after the
+    module name. Compatible with Kelp modules.
 
-        plugin 'Logger', params => [outputs => [['Screen', min_level => 'debug']]];
+        plugin 'Swagger', enable => 'CORS';
 
-  middleware
-    Adds middleware to your application.
+   middleware
+    Adds a middleware to your application.
 
         middleware '+Plack::Middleware::Session' => { store => 'File' };
         middleware '+Plack::Middleware::ContentLength';
         middleware 'Runtime'; # will be loaded Plack::Middleware::Runtime
 
-  mount
-    Mount multiple API implementations inside another one.
+   mount
+    Mounts multiple API implementations inside another one. These don't have
+    to be different versions, but may be components of the same API.
 
     In "RaisinApp.pm":
 
@@ -282,17 +227,90 @@ KEYWORDS
 
         1;
 
-  new, run
-    Creates and returns a PSGI ready subroutine, and makes the app ready for
-    "Plack".
+   run
+    Returns the "PSGI" application.
+
+  INSIDE ROUTE
+   req
+    Provides quick access to the Raisin::Request object for the current
+    route.
+
+    Use "req" to get access to request headers, params, etc.
+
+        use DDP;
+        p req->headers;
+        p req->params;
+
+        say req->header('X-Header');
+
+    See also Plack::Request.
+
+   res
+    Provides quick access to the Raisin::Response object for the current
+    route.
+
+    Use "res" to set up response parameters.
+
+        res->status(403);
+        res->headers(['X-Application' => 'Raisin Application']);
+
+    See also Plack::Response.
+
+   param
+    Returns request parameters. Without an argument will return an array of
+    all input parameters. Otherwise it will return the value of the
+    requested parameter.
+
+    Returns Hash::MultiValue object.
+
+        say param('key'); # -> value
+        say param(); # -> { key => 'value', foo => 'bar' }
+
+   session
+    Returns "psgix.session" hash. When it exists, you can retrieve and store
+    per-session data.
+
+        # store param
+        session->{hello} = 'World!';
+
+        # read param
+        say session->{name};
+
+   present
+    Raisin hash a built-in "present" method, which accepts two arguments: an
+    object to be presented and an options associated with it. The options
+    hash may include "with" key, which is defined the entity to expose. See
+    Raisin::Entity.
+
+        my $artists = $schema->resultset('Artist');
+
+        present data => $artists, with => 'MusicApp::Entity::Artist';
+        present count => $artists->count;
+
+    Raisin::Entity supports DBIx::Class and Rose::DB::Object.
+
+    For details see examples in *examples/music-app* and Raisin::Entity.
 
 PARAMETERS
-    Request parameters are available through the params hash object. This
+    A request parameters are available through the "params" "HASH". This
     includes GET, POST and PUT parameters, along with any named parameters
     you specify in your route strings.
 
-    Parameters are automatically populated from the request body on POST and
-    PUT for form input, "JSON" and "YAML" content types.
+    Parameters are automatically populated from the request body on "POST"
+    and "PUT" for form input, "JSON" and "YAML" content-types.
+
+    The request:
+
+        curl -d '{"id": "14"}' 'http://localhost:5000/data' -H Content-Type:application/json -v
+
+    The Raisin endpoint:
+
+        post data => sub {
+            my $params = shift;
+            $params{id};
+        }
+
+    Multipart "POST"s and "PUT"s are supported as well.
 
     In the case of conflict between either of:
 
@@ -309,19 +327,22 @@ PARAMETERS
 
   Validation and coercion
     You can define validations and coercion options for your parameters
-    using a params block.
+    using a "params" in Rasisin block.
 
-    Parameters can be "requires" and "optional". "optional" parameters can
-    have a default value.
+    Parameters can "requires" a value and can be an "optional". "optional"
+    parameters can have a default value.
 
         params(
             requires => { name => 'name', type => Str },
-            optional => { name => 'number', type => Int, default => 10 },
+            optional => { name => 'count', type => Int, default => 10 },
         );
         get sub {
             my $params = shift;
-            "$params->{number}: $params->{name}";
+            "$params->{count}: $params->{name}";
         };
+
+    Note that default values will NOT be passed through to any validation
+    options specified.
 
     Available arguments:
 
@@ -335,8 +356,6 @@ PARAMETERS
 
     *   regex
 
-    Optional parameters can have a default value.
-
   Types
     Raisin supports Moo(se)-compatible type constraint so you can use any of
     the Moose, Moo or Type::Tiny type constraints.
@@ -348,7 +367,7 @@ PARAMETERS
     Moose::Manual::Types.
 
 HOOKS
-    This blocks can be executed before or after every API call, using
+    This blocks can be executed before or/and after every API call, using
     "before", "after", "before_validation" and "after_validation".
 
     Before and after callbacks execute in the following order:
@@ -409,7 +428,7 @@ API FORMATS
     *   Fallback to default.
 
 LOGGING
-    Raisin has a built-in logger and support for "Log::Dispatch". You can
+    Raisin has a built-in logger and supports for "Log::Dispatch". You can
     enable it by:
 
         plugin 'Logger', outputs => [['Screen', min_level => 'debug']];
@@ -430,47 +449,34 @@ API DOCUMENTATION
   Raisin script
     You can see application routes with the following command:
 
-        $ raisin --routes examples/simple/routes.pl
-          GET     /user
-          GET     /user/all
-          POST    /user
-          GET     /user/{id}
-          PUT     /user/{id}
-          GET     /user/{id}/bump
-          PUT     /user/{id}/bump
-          GET     /failed
+        $ raisin examples/pod-synopsis-app/darth.pl
+        GET     /user
+        GET     /user/all
+        POST    /user
+        GET     /user/:id
+        DELETE  /user/:id
+        PUT     /user/:id
+        GET     /echo
 
-    Verbose output with route parameters:
+    Including parameters:
 
-        $ raisin --routes --params examples/simple/routes.pl
-          GET     /user
-            optional: `start', type: Integer, default: 0
-            optional: `count', type: Integer, default: 10
-
-          GET     /user/all
-
-          POST    /user
-            required: `name', type: String
-            required: `password', type: String
-            optional: `email', type: String
-
-          GET     /user/{id}
-            required: `id', type: Integer
-
-          PUT     /user/{id}
-            optional: `password', type: String
-            optional: `email', type: String
-            required: `id', type: Integer
-
-          GET     /user/{id}/bump
-            required: `id', type: Integer
-
-          PUT     /user/{id}/bump
-            required: `id', type: Integer
-
-          GET     /failed
-
-          GET     /params
+        $ raisin --params examples/pod-synopsis-app/darth.pl
+        GET     /user
+           start Int{0}
+           count Int{10}
+        GET     /user/all
+        POST    /user
+          *name     Str
+          *password Str
+        email    Str
+        GET     /user/:id
+          *id Int
+        DELETE  /user/:id
+          *id Int
+        PUT     /user/:id
+          *id Int
+        GET     /echo
+          *data Any{ёй}
 
   Swagger
     Swagger <https://github.com/wordnik/swagger-core> compatible API
@@ -481,7 +487,7 @@ API DOCUMENTATION
     Documentation will be available on "http://<url>/api-docs" URL. So you
     can use this URL in Swagger UI.
 
-    For more see Raisin::Plugin::Swagger.
+    See Raisin::Plugin::Swagger.
 
 MIDDLEWARE
     You can easily add any Plack middleware to your application using
@@ -517,7 +523,7 @@ DEPLOYING
     Deploying a Raisin application is done the same way any other Plack
     application is deployed:
 
-        > plackup -E deployment -s Starman app.psgi
+        $ plackup -E deployment -s Starman app.psgi
 
   Kelp
         use Plack::Builder;
@@ -566,17 +572,51 @@ DEPLOYING
     Also see Plack::Builder, Plack::App::URLMap.
 
 EXAMPLES
-    See examples.
+    Raisin comes with three instance in *example* directory:
+
+    pod-synopsis-app
+        Basic instance which is used in synopsis.
+
+    music-app
+        Shows the possibility of using "present" in Raisin with DBIx::Class
+        and Rose::DB::Object.
+
+    sample-app
+        Shows an example of complex application.
+
+BACKWARD COMPATIBILITY
+    Since version 0.5000 Raisin was migrated to the new API syntax.
+
+    You could still use an old style API for a while by passing an "-old"
+    key to the Raisin::API.
+
+        use Raisin::API '-old';
+
+ROADMAP
+    *   Make test application in *t/*;
+
+    *   Improve Raisin::Entity;
+
+    *   Upgrade Swagger to 2.0
+        <https://github.com/wordnik/swagger-spec/blob/master/versions/2.0.md
+        >;
+
+    *   Endpoint's hooks: "after", "before";
+
+    *   Mount API's in any place of "resource" block;
+
+    *   "declared" keyword which should be applicable to "param" and
+        supports for "missing" keyword;
 
 GITHUB
     <https://github.com/khrt/Raisin>
 
-AUTHOR
-    Artur Khabibullin - rtkh <at> cpan.org
-
 ACKNOWLEDGEMENTS
     This module was inspired both by Grape and Kelp, which was inspired by
     Dancer, which in its turn was inspired by Sinatra.
+
+AUTHOR
+    Artur Khabibullin - rtkh <at> cpan.org
 
 LICENSE
     This module and all the modules in this package are governed by the same

@@ -1,5 +1,5 @@
 ---
-abstract: 'REST-like API web micro-framework for Perl.'
+abstract: 'a REST API micro framework for Perl.'
 author:
   - 'Artur Khabibullin - rtkh <at> cpan.org'
 build_requires:
@@ -7,7 +7,7 @@ build_requires:
 configure_requires:
   Module::Build::Tiny: '0.039'
 dynamic_config: 0
-generated_by: 'Dist::Milla version v1.0.8, Dist::Zilla version 5.020, CPAN::Meta::Converter version 2.133380'
+generated_by: 'Dist::Zilla version 5.025, Dist::Milla version v1.0.8, CPAN::Meta::Converter version 2.142690'
 license: perl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -22,7 +22,6 @@ no_index:
     - eg
     - examples
 requires:
-  Hash::MultiValue: '0'
   JSON: '2.90'
   List::Util: '1.35'
   Plack: '1.0030'
@@ -35,6 +34,6 @@ resources:
   bugtracker: https://github.com/khrt/Raisin/issues
   homepage: https://github.com/khrt/Raisin
   repository: https://github.com/khrt/Raisin.git
-version: '0.5101'
+version: '0.5200'
 x_contributors:
   - 'Artur Kh <khrt@ya.ru>'

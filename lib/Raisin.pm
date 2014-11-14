@@ -11,7 +11,7 @@ use Raisin::Response;
 use Raisin::Routes;
 use Raisin::Util;
 
-our $VERSION = '0.5101';
+our $VERSION = '0.5200';
 
 sub new {
     my ($class, %args) = @_;
@@ -104,70 +104,59 @@ sub psgi {
         $self->build_api_spec;
     }
 
-    # HOOK Before
-    $self->hook('before')->($self);
-
-    # Find route
-    my $routes = $self->routes->find($req->method, $req->path);
-
-    if (!@$routes) {
-        $res->render_404;
-        return $res->finalize;
-    }
-
     eval {
-        foreach my $route (@$routes) {
-            if ($self->api_format && (my $type = $req->accept_format)) {
-                if ($type ne $self->api_format) {
-                    $self->log(error => 'Invalid accept header');
-                    $res->render_error(406, 'Invalid accept header');
-                    last;
-                }
+        $self->hook('before')->($self);
+
+        # Find a route
+        my $route = $self->routes->find($req->method, $req->path);
+
+        if (!$route) {
+            $res->render_404;
+            return $res->finalize;
+        }
+
+        if ($self->api_format && (my $type = $req->accept_format)) {
+            if ($type ne $self->api_format) {
+                $self->log(error => 'Invalid accept header');
+                $res->render_error(406, 'Invalid accept header');
+                return $res->finalize;
             }
+        }
 
-            # Validate code variable
-            my $code = $route->code;
-            if (!$code || (ref($code) && ref($code) ne 'CODE')) {
-                croak 'Invalid endpoint for ' . $req->path;
-            }
+        my $code = $route->code;
+        if (!$code || ($code && ref($code) ne 'CODE')) {
+            $res->render_500('Invalid endpoint for ' . $req->path);
+            return $res->finalize;
+        }
 
-            # Log
-            #$self->log(info => $req->method . q{ } . $route->path);
+        $self->hook('before_validation')->($self);
 
-            # HOOK Before validation
-            $self->hook('before_validation')->($self);
+        # Validation and coercion of a declared params
+        if (not $req->prepare_params($route->params, $route->named)) {
+            $res->render_error(400, 'Invalid params!');
+            return $res->finalize;
+        }
 
-            # Populate and validate declared params
-            if (not $req->prepare_params($route->params, $route->named)) {
-                $res->render_error(400, 'Invalid params!');
-                last;
-            }
+        $self->hook('after_validation')->($self);
 
-            # HOOK After validation
-            $self->hook('after_validation')->($self);
-
-            # Eval code
-            my $data = $code->($req->declared_params);
-
-            # TODO:
-            # set data to the res->body
-            # check only res->body
-            if (defined($data) || $res->body) {
-                # Handle delayed response
-                return $data if ref($data) eq 'CODE'; # TODO: check delayed responses
-
-                # Detect output format
-                my $format = $route->format || $req->header('Accept');
-                $res->render($format, $data) if not $res->rendered;
-            }
-
-            # HOOK After
-            $self->hook('after')->($self);
+        # Eval user endpoint
+        my $data = $code->($req->declared_params);
+        if (defined $data) {
+            # TODO: delayed responses are untested
+            return $data if ref($data) eq 'CODE';
+            $res->body($data);
         }
 
         if (!$res->rendered) {
+            my $format = $route->format || $req->header('Accept');
+            $res->format($format);
+            $res->render;
+        }
+
+        $self->hook('after')->($self);
+
+        if (!$res->rendered) {
             $self->log(error => 'Nothing rendered');
-            # TODO: render something
         }
 
         1;
@@ -260,14 +249,14 @@ __END__
 
 =head1 NAME
 
-Raisin - REST-like API web micro-framework for Perl.
-
-=for HTML <a href="https://travis-ci.org/khrt/Raisin"><img src="https://travis-ci.org/khrt/Raisin.svg?branch=master"></a>
+Raisin - a REST API micro framework for Perl.
 
 =head1 SYNOPSIS
 
     use strict;
     use warnings;
+
+    use utf8;
 
     use Raisin::API;
     use Types::Standard qw(Any Int Str);
@@ -349,48 +338,48 @@ Raisin - REST-like API web micro-framework for Perl.
                 my $params = shift;
                 { success => delete $USERS{ $params->{id} } };
             };
-
-            desc 'NOP';
-            put sub { 'nop' };
         };
+    };
+
+    resource echo => sub {
+        params(
+            optional => { name => 'data0', type => Any, default => "ёй" },
+        );
+        get sub { shift };
+
+        desc 'NOP';
+        get nop => sub { };
     };
 
     run;
 
 =head1 DESCRIPTION
 
-Raisin is a REST-like API web micro-framework for Perl.
+Raisin is a REST API micro framework for Perl.
 It's designed to run on Plack, providing a simple DSL to easily develop RESTful APIs.
 It was inspired by L<Grape|https://github.com/intridea/grape>.
 
-=head1 BACKWARD COMPATIBILITY
+=for HTML <a href="https://travis-ci.org/khrt/Raisin"><img src="https://travis-ci.org/khrt/Raisin.svg?branch=master"></a>
 
-Since version C<0.5000> C<Raisin> was migrated to the new API syntax.
+=head1 FUNCTIONS
 
-You could still use an old style API for a while by passing
-an C<-old> key to the C<Raisin::API>.
+=head2 API DESCRIPTION
 
-    use Raisin::API '-old';
+=head3 resource
 
-See examples for more information.
-
-=head1 KEYWORDS
-
-=head2 resource
-
-Adds a route to application.
+Adds a route to an application.
 
     resource user => sub { ... };
 
-=head2 route_param
+=head3 route_param
 
 Define a route parameter as a namespace C<route_param>.
 
     route_param id => sub { ... };
 
-=head2 del, get, patch, post, put
+=head3 del, get, patch, post, put
 
-It's a shortcuts to C<route> restricted to the corresponding HTTP method.
+Shortcuts to add a C<route> restricted to the corresponding HTTP method.
 
     get sub { 'GET' };
 
@@ -411,10 +400,10 @@ It's a shortcuts to C<route> restricted to the corresponding HTTP method.
         'PUT'
     };
 
-=head2 desc
+=head3 desc
 
-Can be applied to C<resource> or any of HTTP method to add description
-for operation or for resource.
+Can be applied to C<resource> or any of the HTTP method to add a description
+for an operation or for a resource.
 
     desc 'Some action';
     put sub { ... };
@@ -422,13 +411,15 @@ for operation or for resource.
     desc 'Some operations group',
     resource => 'user' => sub { ... }
 
-=head2 params
+=head3 params
 
 Here you can define validations and coercion options for your parameters.
 Can be applied to any HTTP method and/or C<route_param> to describe parameters.
 
     params(
-        requires => { name => 'key', type => Str }
+        requires => { name => 'name', type => Str },
+        optional => { name => 'start', type => Int, default => 0 },
+        optional => { name => 'count', type => Int, default => 10 },
     );
     get sub { ... };
 
@@ -439,84 +430,21 @@ Can be applied to any HTTP method and/or C<route_param> to describe parameters.
 
 For more see L<Raisin/Validation-and-coercion>.
 
-=head2 req
+=head3 api_default_format
 
-An alias for C<$self-E<gt>req>, which provides quick access to the
-L<Raisin::Request> object for the current route.
+Specifies default API format mode when formatter doesn't specified by API user.
+E.g. URI is asked without an extension (C<json>, C<yaml>) or C<Accept> header
+isn't specified.
 
-Use C<req> to get access to a request headers, params, etc.
-
-    use DDP;
-    p req->headers;
-    p req->params;
-
-    say req->header('X-Header');
-
-See also L<Plack::Request>.
-
-=head2 res
-
-An alias for C<$self-E<gt>res>, which provides quick access to the
-L<Raisin::Response> object for the current route.
-
-Use C<res> to set up response parameters.
-
-    res->status(403);
-    res->headers(['X-Application' => 'Raisin Application']);
-
-See also L<Plack::Response>.
-
-=head2 param
-
-An alias for C<$self-E<gt>params>, which returns request parameters.
-Without arguments will return an array with request parameters.
-Otherwise it will return the value of the requested parameter.
-
-Returns L<Hash::MultiValue> object.
-
-    say param('key'); # -> value
-    say param(); # -> { key => 'value', foo => 'bar' }
-
-=head2 session
-
-An alias for C<$self-E<gt>session>, which returns C<psgix.session> hash.
-When it exists, you can retrieve and store per-session data.
-
-    # store param
-    session->{hello} = 'World!';
-
-    # read param
-    say session->{name};
-
-=head2 present
-
-As a Grape Raisin support for a range ways to present your data as well.
-Raisin hash a built-in C<present> method, which accepts two arguments: the
-object to be presented and the options associated with it. The options hash may
-include C<with> key, which is defined the entity to expose. See L<Raisin::Entity>.
-
-    my $artists = $schema->resultset('Artist');
-
-    present data => $artists, with => 'MusicApp::Entity::Artist';
-    present count => $artists->count;
-
-L<Raisin::Entity> supports L<DBIx::Class> and L<Rose::DB::Object>.
-
-For details see examples in I<examples/entity> and L<Raisin::Entity>.
-
-=head2 api_default_format
-
-Specify default API format when formatter doesn't specified.
 Default value: C<YAML>.
 
     api_default_format 'json';
 
 See also L<Raisin/API-FORMATS>.
 
-=head2 api_format
+=head3 api_format
 
-Restricts API to use only specified formatter for serialize and deserialize
-data.
+Restricts API to use only specified formatter to serialize and deserialize data.
 
 Already exists L<Raisin::Plugin::Format::JSON> and L<Raisin::Plugin::Format::YAML>.
 
@@ -524,30 +452,31 @@ Already exists L<Raisin::Plugin::Format::JSON> and L<Raisin::Plugin::Format::YAM
 
 See also L<Raisin/API-FORMATS>.
 
-=head2 api_version
+=head3 api_version
 
-Setup an API version header.
+Sets up an API version header.
 
     api_version 1.23;
 
-=head2 plugin
+=head3 plugin
 
-Loads Raisin module. A module options may be specified after a module name.
+Loads a Raisin module. A module options may be specified after the module name.
 Compatible with L<Kelp> modules.
 
-    plugin 'Logger', params => [outputs => [['Screen', min_level => 'debug']]];
+    plugin 'Swagger', enable => 'CORS';
 
-=head2 middleware
+=head3 middleware
 
-Adds middleware to your application.
+Adds a middleware to your application.
 
     middleware '+Plack::Middleware::Session' => { store => 'File' };
     middleware '+Plack::Middleware::ContentLength';
     middleware 'Runtime'; # will be loaded Plack::Middleware::Runtime
 
-=head2 mount
+=head3 mount
 
-Mount multiple API implementations inside another one.
+Mounts multiple API implementations inside another one.
+These don't have to be different versions, but may be components of the same API.
 
 In C<RaisinApp.pm>:
 
@@ -562,18 +491,95 @@ In C<RaisinApp.pm>:
 
     1;
 
-=head2 new, run
+=head3 run
 
-Creates and returns a PSGI ready subroutine, and makes the app ready for C<Plack>.
+Returns the C<PSGI> application.
+
+=head2 INSIDE ROUTE
+
+=head3 req
+
+Provides quick access to the L<Raisin::Request> object for the current route.
+
+Use C<req> to get access to request headers, params, etc.
+
+    use DDP;
+    p req->headers;
+    p req->params;
+
+    say req->header('X-Header');
+
+See also L<Plack::Request>.
+
+=head3 res
+
+Provides quick access to the L<Raisin::Response> object for the current route.
+
+Use C<res> to set up response parameters.
+
+    res->status(403);
+    res->headers(['X-Application' => 'Raisin Application']);
+
+See also L<Plack::Response>.
+
+=head3 param
+
+Returns request parameters.
+Without an argument will return an array of all input parameters.
+Otherwise it will return the value of the requested parameter.
+
+Returns L<Hash::MultiValue> object.
+
+    say param('key'); # -> value
+    say param(); # -> { key => 'value', foo => 'bar' }
+
+=head3 session
+
+Returns C<psgix.session> hash. When it exists, you can retrieve and store
+per-session data.
+
+    # store param
+    session->{hello} = 'World!';
+
+    # read param
+    say session->{name};
+
+=head3 present
+
+Raisin hash a built-in C<present> method, which accepts two arguments: an
+object to be presented and an options associated with it. The options hash may
+include C<with> key, which is defined the entity to expose. See L<Raisin::Entity>.
+
+    my $artists = $schema->resultset('Artist');
+
+    present data => $artists, with => 'MusicApp::Entity::Artist';
+    present count => $artists->count;
+
+L<Raisin::Entity> supports L<DBIx::Class> and L<Rose::DB::Object>.
+
+For details see examples in I<examples/music-app> and L<Raisin::Entity>.
 
 =head1 PARAMETERS
 
-Request parameters are available through the params hash object. This includes
+A request parameters are available through the C<params> C<HASH>. This includes
 GET, POST and PUT parameters, along with any named parameters you specify in
 your route strings.
 
-Parameters are automatically populated from the request body on POST and PUT
-for form input, C<JSON> and C<YAML> content types.
+Parameters are automatically populated from the request body
+on C<POST> and C<PUT> for form input, C<JSON> and C<YAML> content-types.
+
+The request:
+
+    curl -d '{"id": "14"}' 'http://localhost:5000/data' -H Content-Type:application/json -v
+
+The Raisin endpoint:
+
+    post data => sub {
+        my $params = shift;
+        $params{id};
+    }
+
+Multipart C<POST>s and C<PUT>s are supported as well.
 
 In the case of conflict between either of:
 
@@ -593,20 +599,23 @@ Query string and body parameters will be merged (see L<Plack::Request/parameters
 
 =head2 Validation and coercion
 
-You can define validations and coercion options for your parameters using a params block.
+You can define validations and coercion options for your parameters using a
+L<Rasisin/params> block.
 
-Parameters can be C<requires> and C<optional>. C<optional> parameters can have a
-default value.
+Parameters can C<requires> a value and can be an C<optional>.
+C<optional> parameters can have a default value.
 
     params(
         requires => { name => 'name', type => Str },
-        optional => { name => 'number', type => Int, default => 10 },
+        optional => { name => 'count', type => Int, default => 10 },
     );
     get sub {
         my $params = shift;
-        "$params->{number}: $params->{name}";
+        "$params->{count}: $params->{name}";
     };
 
+Note that default values will NOT be passed through to any validation options
+specified.
 
 Available arguments:
 
@@ -624,22 +633,20 @@ Available arguments:
 
 =back
 
-Optional parameters can have a default value.
-
 =head2 Types
 
-Raisin supports Moo(se)-compatible type constraint
-so you can use any of the L<Moose>, L<Moo> or L<Type::Tiny> type constraints.
+Raisin supports Moo(se)-compatible type constraint so you can use any of the
+L<Moose>, L<Moo> or L<Type::Tiny> type constraints.
 
-By default L<Raisin> depends on L<Type::Tiny> and it's L<Types::Standard>
-type contraint library.
+By default L<Raisin> depends on L<Type::Tiny> and it's L<Types::Standard> type
+contraint library.
 
 You can create your own types as well.
 See L<Type::Tiny::Manual> and L<Moose::Manual::Types>.
 
 =head1 HOOKS
 
-This blocks can be executed before or after every API call, using
+This blocks can be executed before or/and after every API call, using
 C<before>, C<after>, C<before_validation> and C<after_validation>.
 
 Before and after callbacks execute in the following order:
@@ -715,7 +722,7 @@ The order for choosing the format is the following.
 
 =head1 LOGGING
 
-Raisin has a built-in logger and support for C<Log::Dispatch>.
+Raisin has a built-in logger and supports for C<Log::Dispatch>.
 You can enable it by:
 
     plugin 'Logger', outputs => [['Screen', min_level => 'debug']];
@@ -738,47 +745,34 @@ See L<Raisin::Plugin::Logger>.
 
 You can see application routes with the following command:
 
-    $ raisin --routes examples/simple/routes.pl
-      GET     /user
-      GET     /user/all
-      POST    /user
-      GET     /user/{id}
-      PUT     /user/{id}
-      GET     /user/{id}/bump
-      PUT     /user/{id}/bump
-      GET     /failed
+    $ raisin examples/pod-synopsis-app/darth.pl
+    GET     /user
+    GET     /user/all
+    POST    /user
+    GET     /user/:id
+    DELETE  /user/:id
+    PUT     /user/:id
+    GET     /echo
 
-Verbose output with route parameters:
+Including parameters:
 
-    $ raisin --routes --params examples/simple/routes.pl
-      GET     /user
-        optional: `start', type: Integer, default: 0
-        optional: `count', type: Integer, default: 10
-
-      GET     /user/all
-
-      POST    /user
-        required: `name', type: String
-        required: `password', type: String
-        optional: `email', type: String
-
-      GET     /user/{id}
-        required: `id', type: Integer
-
-      PUT     /user/{id}
-        optional: `password', type: String
-        optional: `email', type: String
-        required: `id', type: Integer
-
-      GET     /user/{id}/bump
-        required: `id', type: Integer
-
-      PUT     /user/{id}/bump
-        required: `id', type: Integer
-
-      GET     /failed
-
-      GET     /params
+    $ raisin --params examples/pod-synopsis-app/darth.pl
+    GET     /user
+       start Int{0}
+       count Int{10}
+    GET     /user/all
+    POST    /user
+      *name     Str
+      *password Str
+    email    Str
+    GET     /user/:id
+      *id Int
+    DELETE  /user/:id
+      *id Int
+    PUT     /user/:id
+      *id Int
+    GET     /echo
+      *data Any{ёй}
 
 =head2 Swagger
 
@@ -789,7 +783,7 @@ L<Swagger|https://github.com/wordnik/swagger-core> compatible API documentations
 Documentation will be available on C<http://E<lt>urlE<gt>/api-docs> URL.
 So you can use this URL in Swagger UI.
 
-For more see L<Raisin::Plugin::Swagger>.
+See L<Raisin::Plugin::Swagger>.
 
 =head1 MIDDLEWARE
 
@@ -829,7 +823,7 @@ See L<Plack::Test>, L<Test::More> and etc.
 Deploying a Raisin application is done the same way any other Plack
 application is deployed:
 
-    > plackup -E deployment -s Starman app.psgi
+    $ plackup -E deployment -s Starman app.psgi
 
 =head2 Kelp
 
@@ -882,20 +876,64 @@ Also see L<Plack::Builder>, L<Plack::App::URLMap>.
 
 =head1 EXAMPLES
 
-See examples.
+Raisin comes with three instance in I<example> directory:
+
+=over
+
+=item pod-synopsis-app
+
+Basic instance which is used in synopsis.
+
+=item music-app
+
+Shows the possibility of using L<Raisin/present> with L<DBIx::Class>
+and L<Rose::DB::Object>.
+
+=item sample-app
+
+Shows an example of complex application.
+
+=back
+
+=head1 BACKWARD COMPATIBILITY
+
+Since version C<0.5000> Raisin was migrated to the new API syntax.
+
+You could still use an old style API for a while by passing an C<-old> key
+to the L<Raisin::API>.
+
+    use Raisin::API '-old';
+
+=head1 ROADMAP
+
+=over
+
+=item * Make test application in I<t/>;
+
+=item * Improve L<Raisin::Entity>;
+
+=item * Upgrade Swagger to L<2.0|https://github.com/wordnik/swagger-spec/blob/master/versions/2.0.md>;
+
+=item * Endpoint's hooks: C<after>, C<before>;
+
+=item * Mount API's in any place of C<resource> block;
+
+=item * C<declared> keyword which should be applicable to C<param> and supports for C<missing> keyword;
+
+=back
 
 =head1 GITHUB
 
 L<https://github.com/khrt/Raisin|https://github.com/khrt/Raisin>
 
-=head1 AUTHOR
-
-Artur Khabibullin - rtkh E<lt>atE<gt> cpan.org
-
 =head1 ACKNOWLEDGEMENTS
 
 This module was inspired both by Grape and L<Kelp>,
 which was inspired by L<Dancer>, which in its turn was inspired by Sinatra.
+
+=head1 AUTHOR
+
+Artur Khabibullin - rtkh E<lt>atE<gt> cpan.org
 
 =head1 LICENSE
 

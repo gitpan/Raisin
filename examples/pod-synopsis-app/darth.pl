@@ -3,10 +3,12 @@
 use strict;
 use warnings;
 
+use utf8;
+
 use FindBin;
 use lib "$FindBin::Bin/../../lib";
 
-use Raisin::API '-old';
+use Raisin::API;
 use Types::Standard qw(Any Int Str);
 
 my %USERS = (
@@ -25,14 +27,14 @@ my %USERS = (
 plugin 'Swagger', enable => 'CORS';
 api_format 'json';
 
-desc 'Actions on users',
-resource => user => sub {
-    desc 'List users',
-    params => [
+desc 'Actions on users';
+resource user => sub {
+    desc 'List users';
+    params(
         optional => { name => 'start', type => Int, default => 0, desc => 'Pager (start)' },
         optional => { name => 'count', type => Int, default => 10, desc => 'Pager (count)' },
-    ],
-    get => sub {
+    );
+    get sub {
         my $params = shift;
 
         my @users
@@ -47,21 +49,21 @@ resource => user => sub {
         { data => \@slice }
     };
 
-    desc 'List all users at once',
-    get => 'all' => sub {
+    desc 'List all users at once';
+    get 'all' => sub {
         my @users
             = map { { id => $_, %{ $USERS{$_} } } }
               sort { $a <=> $b } keys %USERS;
         { data => \@users }
     };
 
-    desc 'Create new user',
-    params => [
+    desc 'Create new user';
+    params(
         requires => { name => 'name', type => Str, desc => 'User name' },
         requires => { name => 'password', type => Str, desc => 'User password' },
         optional => { name => 'email', type => Str, default => undef, regex => qr/.+\@.+/, desc => 'User email' },
-    ],
-    post => sub {
+    );
+    post sub {
         my $params = shift;
 
         my $id = max(keys %USERS) + 1;
@@ -70,35 +72,33 @@ resource => user => sub {
         { success => 1 }
     };
 
-    desc 'Actions on the user',
-    params => [
+    desc 'Actions on the user';
+    params(
         requires => { name => 'id', type => Int, desc => 'User ID' },
-    ],
-    route_param => 'id',
-    sub {
-        desc 'Show user',
-        get => sub {
+    );
+    route_param 'id' => sub {
+        desc 'Show user';
+        get sub {
             my $params = shift;
             $USERS{ $params->{id} };
         };
 
-        desc 'Delete user',
-        del => sub {
+        desc 'Delete user';
+        del sub {
             my $params = shift;
             { success => delete $USERS{ $params->{id} } };
         };
-
-        desc 'NOP',
-        put => sub { 'nop' };
     };
-
 };
 
 resource echo => sub {
-    params [
-        requires => { name => 'data', type => Any },
-    ],
-    get => sub { { data => 'ё' } };
+    params(
+        optional => { name => 'data0', type => Any, default => "ёй" },
+    );
+    get sub { shift };
+
+    desc 'NOP';
+    get nop => sub { };
 };
 
 run;
