@@ -29,17 +29,7 @@ sub new {
 
 sub _parse {
     my ($self, $spec) = @_;
-
-    my @keys = qw(name type default regex desc);
-
-    if (ref($spec) eq 'ARRAY') {
-        #TODO: $self->app->log($e);
-        carp 'Deprecated parameters definition syntax. Use hashref syntax instead.';
-        @$self{@keys} = @$spec;
-    }
-    elsif (ref($spec) eq 'HASH') {
-        $self->{$_} = $spec->{$_} for @keys;
-    }
+    $self->{$_} = $spec->{$_} for qw(name type default regex desc);
 }
 
 sub validate {
@@ -49,7 +39,7 @@ sub validate {
     # Only optional parameters can has default value
     if ($self->required && !defined($$ref_value)) {
         #TODO: $self->app->log($e);
-        carp "$self->{name} required but empty!" unless $quiet;
+        print STDERR "`$self->{name}' is required but empty!\n" unless $quiet;
         return;
     }
 
@@ -59,10 +49,11 @@ sub validate {
         return 1;
     }
 
+    # TODO: validate HASHes
     if ($$ref_value && ref $$ref_value && ref $$ref_value ne 'ARRAY') {
         #TODO: $self->app->log($e);
-        carp "$self->{name} \$ref_value should be SCALAR or ARRAYREF" unless $quiet;
-        return;
+        print STDERR "`$self->{name}' \$ref_value should be SCALAR or ARRAYREF\n" unless $quiet;
+        return 1;
     }
 
     my $was_scalar;
@@ -74,20 +65,22 @@ sub validate {
     for my $v (@$$ref_value) {
         # Type check
         eval { $v = $self->type->($v) };
-        my $e = $@;
-        if ($e) {
+        if (my $e = $@) {
             unless ($quiet) {
                 #TODO: $self->app->log($e);
-                carp "Param: `$self->{name}` has invalid value `$v`!";
-                carp $e;
+                printf STDERR "Param `%s' didn't pass type constraint `%s' with value \"%s\".\n",
+                    $self->name, $self->type->name, $v;
             }
             return;
         }
 
         # Param check
         if ($self->regex && $v !~ $self->regex) {
-            #TODO: $self->app->log($e);
-            carp "Param: regex failed; `$self->{name}` has invalid value `$v`!" unless $quiet;
+            unless ($quiet) {
+                #TODO: $self->app->log($e);
+                printf STDERR "Param `%s' didn't pass regex constraint `%s' with value \"%s\".\n",
+                    $self->name, $self->regex, $v;
+            }
             return;
         }
     }

@@ -11,7 +11,7 @@ use Raisin::Response;
 use Raisin::Routes;
 use Raisin::Util;
 
-our $VERSION = '0.5200';
+our $VERSION = '0.55';
 
 sub new {
     my ($class, %args) = @_;
@@ -246,6 +246,8 @@ sub session {
 1;
 
 __END__
+
+=encoding utf8
 
 =head1 NAME
 
@@ -600,7 +602,7 @@ Query string and body parameters will be merged (see L<Plack::Request/parameters
 =head2 Validation and coercion
 
 You can define validations and coercion options for your parameters using a
-L<Rasisin/params> block.
+L<Raisin/params> block.
 
 Parameters can C<requires> a value and can be an C<optional>.
 C<optional> parameters can have a default value.
@@ -895,24 +897,11 @@ Shows an example of complex application.
 
 =back
 
-=head1 BACKWARD COMPATIBILITY
-
-Since version C<0.5000> Raisin was migrated to the new API syntax.
-
-You could still use an old style API for a while by passing an C<-old> key
-to the L<Raisin::API>.
-
-    use Raisin::API '-old';
-
 =head1 ROADMAP
 
 =over
 
-=item * Make test application in I<t/>;
-
-=item * Improve L<Raisin::Entity>;
-
-=item * Upgrade Swagger to L<2.0|https://github.com/wordnik/swagger-spec/blob/master/versions/2.0.md>;
+=item * Upgrade Swagger to L<2.0|https://github.com/wordnik/swagger-spec/blob/master/versions/2.0.md> and make support for L<Raisin::Entity/documentation>;
 
 =item * Endpoint's hooks: C<after>, C<before>;
 
